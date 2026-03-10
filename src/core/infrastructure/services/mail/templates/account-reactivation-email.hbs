@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reaktivasi Akun Keramik Store</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 28px;">🔄 Reaktivasi Akun</h1>
+    </div>
+    
+    <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
+        <p style="font-size: 16px; margin-bottom: 20px;">Halo <strong>{{ name }}</strong>,</p>
+        
+        <p style="font-size: 16px; margin-bottom: 20px;">
+            Kami menerima permintaan untuk <strong>reaktivasi akun</strong> Anda di <strong>Keramik Store</strong>.
+        </p>
+        
+        <p style="font-size: 16px; margin-bottom: 20px;">
+            Untuk mengaktifkan kembali akun Anda dan melanjutkan pengalaman belanja, 
+            silakan klik tombol verifikasi di bawah ini:
+        </p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{{ verificationUrl }}" 
+               style="display: inline-block; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 25px; font-weight: bold; font-size: 16px;">
+                Reaktivasi Akun Saya
+            </a>
+        </div>
+        
+        <div style="background: white; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #f5576c;">
+            <p style="margin: 0; font-size: 14px; color: #666;">
+                <strong style="color: #f5576c;">⚠️ Penting:</strong><br>
+                Link verifikasi ini akan kedaluwarsa dalam <strong>{{ expiresIn }}</strong>. 
+                Pastikan Anda menyelesaikan proses reaktivasi sebelum waktu tersebut.
+            </p>
+        </div>
+        
+        <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
+            <p style="margin: 0; font-size: 14px; color: #856404;">
+                <strong>🔒 Keamanan Akun:</strong><br>
+                Jika Anda tidak meminta reaktivasi akun ini, abaikan email ini atau hubungi tim support kami segera.
+            </p>
+        </div>
+        
+        <div style="margin-top: 30px; padding: 20px; background: white; border-radius: 8px;">
+            <p style="margin: 0 0 10px 0; font-size: 14px; color: #666;">
+                <strong>Tidak bisa klik tombol?</strong><br>
+                Salin dan tempel link berikut ke browser Anda:
+            </p>
+            <p style="margin: 0; word-break: break-all; font-size: 12px; color: #667eea;">
+                {{ verificationUrl }}
+            </p>
+        </div>
+        
+        <p style="font-size: 16px; margin-top: 30px;">
+            Salam hangat,<br>
+            <strong>Tim Keramik Store</strong>
+        </p>
+    </div>
+    
+    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
+        <p style="font-size: 12px; color: #999; margin: 5px 0;">
+            Email ini dikirim secara otomatis, mohon tidak membalas.
+        </p>
+        <p style="font-size: 12px; color: #999; margin: 5px 0;">
+            © {{ year }} Keramik Store. All rights reserved.
+        </p>
+    </div>
+</body>
+</html>

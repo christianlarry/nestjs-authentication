@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Selamat Datang di Keramik Store</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 28px;">🎉 Selamat Datang!</h1>
+    </div>
+    
+    <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
+        <p style="font-size: 16px; margin-bottom: 20px;">Halo, {{ name }}</p>
+        
+        <p style="font-size: 16px; margin-bottom: 20px;">
+            Terima kasih telah bergabung dengan <strong>Keramik Store</strong>! 
+            Kami sangat senang Anda menjadi bagian dari keluarga kami.
+        </p>
+        
+        <p style="font-size: 16px; margin-bottom: 20px;">
+            Email Anda <strong>{{ email }}</strong> telah berhasil diverifikasi dan akun Anda sekarang aktif. 
+            Anda dapat mulai menjelajahi koleksi produk keramik berkualitas tinggi kami dan melengkapi profil Anda.
+        </p>
+        
+        <div style="background: white; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #667eea;">
+            <h3 style="margin-top: 0; color: #667eea;">✨ Yang Dapat Anda Lakukan:</h3>
+            <ul style="list-style: none; padding: 0; margin: 0;">
+                <li style="padding: 8px 0; font-size: 15px;">🛍️ Belanja produk keramik premium</li>
+                <li style="padding: 8px 0; font-size: 15px;">💝 Dapatkan penawaran eksklusif</li>
+                <li style="padding: 8px 0; font-size: 15px;">📦 Lacak pesanan Anda dengan mudah</li>
+                <li style="padding: 8px 0; font-size: 15px;">🎨 Temukan koleksi terbaru</li>
+            </ul>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{{ frontendUrl }}" 
+               style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 25px; font-weight: bold; font-size: 16px;">
+                Mulai Belanja Sekarang
+            </a>
+        </div>
+        
+        <p style="font-size: 14px; color: #666; margin-top: 30px;">
+            Jika Anda memiliki pertanyaan, jangan ragu untuk menghubungi tim support kami.
+        </p>
+        
+        <p style="font-size: 16px; margin-top: 20px;">
+            Salam hangat,<br>
+            <strong>Tim Keramik Store</strong>
+        </p>
+    </div>
+    
+    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
+        <p style="font-size: 12px; color: #999; margin: 5px 0;">
+            © {{ year }} Keramik Store. All rights reserved.
+        </p>
+    </div>
+</body>
+</html>
