@@ -1,7 +1,79 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import appConfig from './core/config/app/app.config';
+import mailConfig from './core/infrastructure/services/mail/config/mail.config';
+import authConfig from './modules/auth/infrastructure/config/auth.config';
+import redisConfig from './core/infrastructure/persistence/redis/config/redis.config';
+import authGoogleConfig from './modules/auth/infrastructure/config/auth-google.config';
+import { REDIS_CLIENT, RedisModule } from './core/infrastructure/persistence/redis/redis.module';
+import { MailerModule } from './core/infrastructure/mailer/mailer.module';
+import { MailModule } from './core/infrastructure/services/mail/mail.module';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { BullModule } from '@nestjs/bullmq';
+import { JwtModule } from '@nestjs/jwt';
+import Redis from 'ioredis';
+import { AllConfigType } from './core/config/config.type';
+import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
-  imports: [],
-  providers: [],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: ['.env'],
+      load: [
+        appConfig,
+        mailConfig,
+        authConfig,
+        authGoogleConfig,
+        redisConfig
+      ]
+    }),
+    RedisModule,
+    BullModule.forRootAsync({
+      inject: [REDIS_CLIENT],
+      useFactory: (redis: Redis) => ({
+        connection: redis,
+        defaultJobOptions: {
+          removeOnComplete: {
+            age: 24 * 3600, // Keep completed jobs for 24 hours
+            count: 1000, // Keep last 1000 completed jobs
+          },
+          removeOnFail: {
+            age: 7 * 24 * 3600, // Keep failed jobs for 7 days
+          },
+        },
+        prefix: 'bull', // Optional: set a prefix for all queues
+      }),
+    }),
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService, REDIS_CLIENT],
+      useFactory: (
+        configService: ConfigService<AllConfigType>,
+        redis: Redis
+      ) => ({
+        throttlers: [{
+          ttl: configService.get('rateLimit.ttl', { infer: true }) || 60000,
+          limit: configService.get('rateLimit.limit', { infer: true }) || 10,
+        }],
+        storage: new ThrottlerStorageRedisService(redis),
+        skipIf: () => {
+          return configService.get('app.nodeEnv', { infer: true })! === 'development';
+        },
+      }),
+    }),
+    MailerModule,
+    MailModule,
+    JwtModule.register({
+      global: true,
+    }),
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    }
+  ],
 })
 export class AppModule { }
