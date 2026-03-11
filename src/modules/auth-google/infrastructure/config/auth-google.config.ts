@@ -1,5 +1,5 @@
 import { IsString } from "class-validator"
-import { AuthGoogleConfig } from "./types/auth-google-config.type"
+import { AuthGoogleConfig } from "./auth-google-config.type"
 import { registerAs } from "@nestjs/config"
 import validateConfig from "src/utils/validate-config"
 

@@ -3,7 +3,6 @@ import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Job } from 'bullmq';
 import { join } from 'path';
-import { AllConfigType } from 'src/config/config.type';
 import {
   IMailJobData,
   INewLoginNotificationData,
@@ -16,6 +15,7 @@ import {
 import { MAIL_QUEUE_NAME } from './constants/mail-queue.constants';
 import { MailerService } from '../../mailer/mailer.service';
 import { MailJobType } from './enums/mail-job.enum';
+import { AllConfigType } from 'src/core/config/config.type';
 
 /**
  * Mail Processor

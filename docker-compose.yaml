@@ -1,0 +1,41 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: nestjs-authentication-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nestjs_authentication
+      POSTGRES_USER: nestjs_authentication_user
+      POSTGRES_PASSWORD: nestjs_authentication_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - nestjs_authentication_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U nestjs_authentication_user -d nestjs_authentication -h localhost -p 5432",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:8.4-alpine
+    container_name: nestjs-authentication-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - nestjs_authentication_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  nestjs_authentication_postgres_data:
+  nestjs_authentication_redis_data:

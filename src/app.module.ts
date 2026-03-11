@@ -4,7 +4,6 @@ import appConfig from './core/config/app/app.config';
 import mailConfig from './core/infrastructure/services/mail/config/mail.config';
 import authConfig from './modules/auth/infrastructure/config/auth.config';
 import redisConfig from './core/infrastructure/persistence/redis/config/redis.config';
-import authGoogleConfig from './modules/auth/infrastructure/config/auth-google.config';
 import { REDIS_CLIENT, RedisModule } from './core/infrastructure/persistence/redis/redis.module';
 import { MailerModule } from './core/infrastructure/mailer/mailer.module';
 import { MailModule } from './core/infrastructure/services/mail/mail.module';
@@ -15,6 +14,10 @@ import Redis from 'ioredis';
 import { AllConfigType } from './core/config/config.type';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import { APP_GUARD } from '@nestjs/core';
+import { AuthModule } from './modules/auth/auth.module';
+import { AuthGoogleModule } from './modules/auth-google/auth-google.module';
+import authGoogleConfig from './modules/auth-google/infrastructure/config/auth-google.config';
+import rateLimitConfig from './core/config/rate-limit/rate-limit.config';
 
 @Module({
   imports: [
@@ -26,7 +29,8 @@ import { APP_GUARD } from '@nestjs/core';
         mailConfig,
         authConfig,
         authGoogleConfig,
-        redisConfig
+        redisConfig,
+        rateLimitConfig,
       ]
     }),
     RedisModule,
@@ -68,6 +72,10 @@ import { APP_GUARD } from '@nestjs/core';
     JwtModule.register({
       global: true,
     }),
+
+    // Feature Module
+    AuthModule,
+    AuthGoogleModule,
   ],
   providers: [
     {

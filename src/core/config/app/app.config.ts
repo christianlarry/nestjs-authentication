@@ -43,6 +43,10 @@ class EnvironmentVariablesValidator {
   @IsString()
   @IsOptional()
   API_PREFIX: string;
+
+  @IsString()
+  @IsOptional()
+  COOKIE_SECRET: string;
 }
 
 export default registerAs<AppConfig>('app', () => {
@@ -59,5 +63,6 @@ export default registerAs<AppConfig>('app', () => {
       ? parseInt(process.env.APP_PORT, 10)
       : 3000,
     apiPrefix: process.env.API_PREFIX || 'api',
+    cookieSecret: process.env.COOKIE_SECRET || 'default_cookie_secret',
   };
 });

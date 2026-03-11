@@ -1,9 +1,9 @@
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { createTransport, SendMailOptions, Transporter } from "nodemailer";
-import { AllConfigType } from "src/config/config.type";
 import * as fs from 'fs/promises';
 import Handlebars from "handlebars";
+import { AllConfigType } from "src/core/config/config.type";
 
 @Injectable()
 export class MailerService implements OnModuleInit {
@@ -46,7 +46,7 @@ export class MailerService implements OnModuleInit {
     context: Record<string, unknown>;
   }): Promise<void> {
     let html: string | undefined;
-    if (templatePath) {
+    if (templatePath.endsWith('.hbs') && typeof templatePath === 'string') {
       const template = await fs.readFile(templatePath, 'utf-8');
       html = Handlebars.compile(template, {
         strict: true,

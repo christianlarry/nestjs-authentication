@@ -7,6 +7,7 @@ export type AppConfig = {
   backendDomain: string;
   port: number;
   apiPrefix: string;
+  cookieSecret: string;
 };
 
 export enum Environment {
