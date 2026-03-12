@@ -1,70 +1,59 @@
-# 🔐 Authentication Flow Documentation
+# Authentication Flow — NestJS Authentication Service
 
-## Overview
+## Table of Contents
 
-Sistem autentikasi Keramik Store Platform mengimplementasikan berbagai metode autentikasi yang aman dan modern, termasuk:
-
-- ✅ **Email/Password** dengan verifikasi email
-- ✅ **OAuth2** (Google & Facebook)
-- ✅ **Password Reset** flow yang aman
-- ✅ **JWT Tokens** (Access + Refresh tokens)
-- ✅ **Rate Limiting** untuk keamanan
-
----
-
-## 📋 Table of Contents
-
-1. [Email/Password Registration Flow](#1-emailpassword-registration-flow)
-2. [Email Verification Flow](#2-email-verification-flow)
-3. [Login Flow](#3-login-flow)
-4. [Forgot Password Flow](#4-forgot-password-flow)
-5. [Reset Password Flow](#5-reset-password-flow)
-6. [Change Password Flow](#6-change-password-flow-authenticated)
-7. [OAuth2 Flow (Google/Facebook)](#7-oauth2-flow-googlefacebook)
-8. [Token Refresh Flow](#8-token-refresh-flow)
-9. [Logout Flow](#9-logout-flow)
-10. [Link Local Account Flow](#10-link-local-account-flow-oauth-users)
-11. [Account Linking & Management](#11-account-linking--management)
-12. [Error Handling & Edge Cases](#12-error-handling--edge-cases)
-13. [Rate Limiting Configuration](#13-rate-limiting-configuration)
-14. [Security Audit Logging](#14-security-audit-logging)
-15. [Security Best Practices](#15-security-best-practices)
+1. [Registration & Email Verification](#1-registration--email-verification)
+2. [Login with Email & Password](#2-login-with-email--password)
+3. [Account Lockout](#3-account-lockout)
+4. [Token Refresh](#4-token-refresh)
+5. [Logout](#5-logout)
+6. [Forgot Password / Reset Password](#6-forgot-password--reset-password)
+7. [Change Password](#7-change-password)
+8. [OAuth2 Login (Google / GitHub / Facebook)](#8-oauth2-login-google--github--facebook)
+9. [OAuth Provider Linking & Unlinking](#9-oauth-provider-linking--unlinking)
+10. [Two-Factor Authentication (TOTP)](#10-two-factor-authentication-totp)
+11. [Account Reactivation](#11-account-reactivation)
+12. [Token Security Model](#12-token-security-model)
+13. [Rate Limiting Reference](#13-rate-limiting-reference)
+14. [Domain Events & Audit Log](#14-domain-events--audit-log)
+15. [Error Reference](#15-error-reference)
 
 ---
 
-## 1. Email/Password Registration Flow
+## 1. Registration & Email Verification
 
-### Flow Diagram
+### 1.1 Registration Flow
 
 ```
-┌─────────┐                ┌─────────┐                ┌──────────┐
-│ Client  │                │ Backend │                │  Email   │
-└────┬────┘                └────┬────┘                │ Service  │
-     │                          │                     └────┬─────┘
-     │ POST /auth/register      │                          │
-     │ { email, password, name }│                          │
-     ├─────────────────────────>│                          │
-     │                          │                          │
-     │                          │ 1. Validate input        │
-     │                          │ 2. Hash password         │
-     │                          │ 3. Create user (unverified)
-     │                          │ 4. Generate verification token
-     │                          │                          │
-     │                          │ Send verification email  │
-     │                          ├─────────────────────────>│
-     │                          │                          │
-     │ 201 Created              │                          │
-     │ { message, userId }      │                          │
-     │<─────────────────────────┤                          │
-     │                          │                          │
+Client                         Auth Controller          Domain (Account BC)      Infrastructure
+  │                                  │                        │                       │
+  │  POST /v1/auth/register          │                        │                       │
+  │─────────────────────────────────>│                        │                       │
+  │                                  │                        │                       │
+  │                        Validate DTO (class-validator)     │                       │
+  │                                  │                        │                       │
+  │                            Check email exists?────────────────────────────>DB query
+  │                                  │                        │               <───────│
+  │                                  │                        │                       │
+  │                            Account.create()───────────────>                       │
+  │                                  │                  Argon2id hash password         │
+  │                                  │                  Set status = PENDING_VERIFICATION
+  │                                  │                  Emit AccountCreatedEvent       │
+  │                                  │<──────────────────────│                       │
+  │                                  │                        │                       │
+  │                     Save Account to DB────────────────────────────────────>DB write
+  │                                  │                        │                       │
+  │                     Generate verificationToken (crypto.randomBytes(32))           │
+  │                     SHA-256(token) → save VerificationToken record                │
+  │                     type = EMAIL_VERIFICATION, expires = now + 24h                │
+  │                                  │                        │                       │
+  │                     Dispatch BullMQ job: send-verification-email (raw token)      │
+  │                                  │                        │                       │
+  │  201 { message: "... check email" }                       │                       │
+  │<─────────────────────────────────│                        │                       │
 ```
 
-### API Endpoint
-
-**POST** `/v1/auth/register`
-
-### Request Body
-
+**Request body:**
 ```json
 {
   "email": "user@example.com",
@@ -73,1523 +62,572 @@ Sistem autentikasi Keramik Store Platform mengimplementasikan berbagai metode au
 }
 ```
 
-### Response (201 Created)
+**Password policy:** minimum 8 characters, at least one uppercase letter, one lowercase letter, one digit, one special character.
 
-```json
-{
-  "message": "Registration successful. Please check your email to verify your account.",
-  "userId": "550e8400-e29b-41d4-a716-446655440000",
-  "email": "user@example.com"
-}
-```
-
-### Backend Implementation Steps
-
-1. **Validate input**
-   - Email format validation
-   - Password strength check (min 8 characters)
-   - Check if email already exists
-
-2. **Hash password**
-   - Use bcrypt with salt rounds (12+)
-   - Never store plain text passwords
-
-3. **Create user record**
-   - Set `emailVerified: false`
-   - Set `provider: 'local'`
-   - Generate unique userId
-
-4. **Generate verification token**
-   - Create JWT with short expiration (24 hours)
-   - Include userId and email in payload
-
-5. **Send verification email**
-   - Email subject: "Verify your Keramik Store account"
-   - Include verification link with token
-   - Template: `https://keramik-store.com/verify-email?token=xyz`
+**Domain invariants checked:** email must be unique, password must pass policy validation.
 
 ---
 
-## 2. Email Verification Flow
-
-### Flow Diagram
+### 1.2 Email Verification Flow
 
 ```
-┌─────────┐                ┌─────────┐
-│ Client  │                │ Backend │
-└────┬────┘                └────┬────┘
-     │                          │
-     │ User clicks link in email│
-     │                          │
-     │ POST /auth/verify-email  │
-     │ { token }                │
-     ├─────────────────────────>│
-     │                          │
-     │                          │ 1. Verify token signature
-     │                          │ 2. Check token expiration
-     │                          │ 3. Extract userId from token
-     │                          │ 4. Update user.emailVerified = true
-     │                          │
-     │ 200 OK                   │
-     │ { message }              │
-     │<─────────────────────────┤
-     │                          │
-     │ Redirect to /login       │
-     │                          │
+Client                         Auth Controller          Domain (Account BC)
+  │                                  │                        │
+  │  POST /v1/auth/verify-email      │                        │
+  │  { token: "<raw-token>" }        │                        │
+  │─────────────────────────────────>│                        │
+  │                                  │                        │
+  │                     Compute SHA-256(rawToken)              │
+  │                     Lookup VerificationToken by tokenHash │
+  │                                  │                        │
+  │                     [Not found]────────────────────────── 401 TOKEN_INVALID
+  │                     [Expired] ────────────────────────── 401 TOKEN_EXPIRED
+  │                     [Already used]─────────────────────── 409 TOKEN_ALREADY_USED
+  │                                  │                        │
+  │                     Load Account ──────────────────────── DB
+  │                     account.verifyEmail()─────────────────>
+  │                                  │              Set emailVerified = true
+  │                                  │              Set emailVerifiedAt = now()
+  │                                  │              Set status = ACTIVE
+  │                                  │              Emit AccountEmailVerifiedEvent
+  │                                  │<──────────────────────│
+  │                                  │                        │
+  │                     Mark token usedAt = now()              │
+  │                     Save Account                          │
+  │                                  │                        │
+  │  200 { message: "Email verified" }                        │
+  │<─────────────────────────────────│                        │
 ```
-
-### API Endpoint
-
-**POST** `/v1/auth/verify-email`
-
-### Request Body
-
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-}
-```
-
-### Response (200 OK)
-
-```json
-{
-  "message": "Email verified successfully. You can now login."
-}
-```
-
-### Backend Implementation Steps
-
-1. **Verify token**
-   - Validate JWT signature
-   - Check expiration
-   - Extract userId from payload
-
-2. **✅ Graceful handling (RECOMMENDED)**
-   - Check if user email is already verified
-   - If yes, return success message: "Email is already verified. You can login now."
-   - Prevents confusion for OAuth users who might click old verification links
-
-3. **Update user**
-   - Find user by userId
-   - Set `emailVerified: true`
-   - Set `emailVerifiedAt: new Date()`
-   - Set `status: 'ACTIVE'`
-
-4. **Return success**
-   - Frontend redirects to login page
-
-### Resend Verification Email
-
-**POST** `/v1/auth/resend-verification`
-
-```json
-{
-  "email": "user@example.com"
-}
-```
-
-**Response:**
-```json
-{
-  "message": "Verification email sent. Please check your inbox."
-}
-```
-
-**Backend Implementation:**
-
-1. **Find user by email**
-   - Return 404 if not found
-
-2. **✅ Check provider (CRITICAL)**
-   - Verify `user.provider === 'local'`
-   - Return 400 if OAuth user
-   - Message: "This account uses {provider} login and doesn't require email verification."
-
-3. **Check if already verified**
-   - If `emailVerified === true`, return 400
-   - Message: "Email is already verified"
-
-4. **Generate and send new token**
-   - Create new verification token
-   - Send verification email
-
-**Rate Limiting:** Max 3 requests per 1 hour per email
 
 ---
 
-## 3. Login Flow
+### 1.3 Resend Verification Email
 
-### Flow Diagram
+- Only allowed for accounts with `status = PENDING_VERIFICATION`
+- Previous unused tokens for the same account are invalidated
+- New token generated, hashed, stored; raw token dispatched via BullMQ
+- Rate limited: 3 requests per hour
+
+---
+
+## 2. Login with Email & Password
 
 ```
-┌─────────┐                ┌─────────┐
-│ Client  │                │ Backend │
-└────┬────┘                └────┬────┘
-     │                          │
-     │ POST /auth/login         │
-     │ { email, password }      │
-     ├─────────────────────────>│
-     │                          │
-     │                          │ 1. Find user by email
-     │                          │ 2. Check emailVerified = true
-     │                          │ 3. Compare password hash
-     │                          │ 4. Generate access token (15m)
-     │                          │ 5. Generate refresh token (7d)
-     │                          │ 6. Save refresh token to DB
-     │                          │
-     │ 200 OK                   │
-     │ { accessToken,           │
-     │   refreshToken,          │
-     │   expiresIn,             │
-     │   user }                 │
-     │<─────────────────────────┤
-     │                          │
-     │ Store tokens in storage  │
-     │                          │
+Client                         Auth Controller           Domain (Account BC)
+  │                                  │                        │
+  │  POST /v1/auth/login             │                        │
+  │  { email, password }             │                        │
+  │─────────────────────────────────>│                        │
+  │                                  │                        │
+  │                     Rate-limit check (Redis ThrottlerGuard)
+  │                     Load Account by email (not found → 401)
+  │                                  │                        │
+  │                     account.assertCanLogin()──────────────>
+  │                                  │              Check status:
+  │                                  │              - PENDING_VERIFICATION → 401 EMAIL_NOT_VERIFIED
+  │                                  │              - SUSPENDED → 403 ACCOUNT_SUSPENDED
+  │                                  │              - DELETED  → 403 ACCOUNT_DELETED
+  │                                  │              - INACTIVE → 403 ACCOUNT_INACTIVE
+  │                                  │              Check lockedUntil > now() → 423 ACCOUNT_LOCKED
+  │                                  │<──────────────────────│
+  │                                  │                        │
+  │                     Argon2.verify(plainPassword, account.passwordHash)
+  │                                  │                        │
+  │                     [wrong password]                       │
+  │                     account.recordFailedLoginAttempt()────>
+  │                                  │              loginAttempts += 1
+  │                                  │              if loginAttempts >= 5:
+  │                                  │                lockedUntil = now + 30min
+  │                                  │                Emit AccountLockedEvent
+  │                                  │              Emit AccountLoginFailedEvent
+  │                                  │<──────────────────────│
+  │                     Save Account                          │
+  │                     Write LoginHistory (success=false)     │
+  │  401 INVALID_CREDENTIALS         │                        │
+  │<─────────────────────────────────│                        │
+  │                                  │                        │
+  │                     [correct password]                     │
+  │                     account.recordSuccessfulLogin()────────>
+  │                                  │              loginAttempts = 0
+  │                                  │              lockedUntil = null
+  │                                  │              lastLoginAt = now()
+  │                                  │              Emit AccountLoggedInEvent
+  │                                  │<──────────────────────│
+  │                     Save Account                          │
+  │                     Write LoginHistory (success=true)      │
+  │                                  │                        │
+  │                     [2FA enabled?]                         │
+  │                     YES → issue partial JWT (twoFactorPending=true)
+  │                           → 200 { requiresTwoFactor: true, tempToken }
+  │                     NO  → Issue accessToken + refreshToken
+  │                           SHA-256(refreshToken) → refresh_tokens table
+  │                           Set-Cookie: refresh_token (httpOnly)
+  │  200 { accessToken, expiresIn }   │                        │
+  │<─────────────────────────────────│                        │
 ```
 
-### API Endpoint
-
-**POST** `/v1/auth/login`
-
-### Request Body
-
+### Access Token Claims
 ```json
 {
+  "sub": "<account-uuid>",
   "email": "user@example.com",
-  "password": "SecurePass123!"
-}
-```
-
-### Response (200 OK)
-
-```json
-{
-  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "expiresIn": 900,
-  "user": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "email": "user@example.com",
-    "name": "John Doe",
-    "role": "CUSTOMER",
-    "provider": "local",
-    "createdAt": "2025-12-30T10:00:00Z"
-  }
-}
-```
-
-### Response (401 Unauthorized) - Email Not Verified
-
-```json
-{
-  "statusCode": 401,
-  "message": "Please verify your email before logging in",
-  "error": "Unauthorized"
-}
-```
-
-### Backend Implementation Steps
-
-1. **Find user**
-   - Query by email
-   - Return 401 if not found (don't reveal if email exists)
-
-2. **Check email verification**
-   - Ensure `emailVerified === true`
-   - Return 401 with specific message if not verified
-   - Ensure user status ACTIVE
-
-3. **Verify password**
-   - Use bcrypt to compare hashed password
-   - Return 401 if password doesn't match
-
-4. **Generate tokens**
-   - **Access Token**: JWT with 15 minutes expiration
-     ```javascript
-     payload: {
-       sub: userId,
-       email: user.email,
-       role: user.role,
-       type: 'access'
-     }
-     ```
-   - **Refresh Token**: JWT with 7 days expiration
-     ```javascript
-     payload: {
-       sub: userId,
-       type: 'refresh',
-       jti: uniqueTokenId // for token revocation
-     }
-     ```
-
-5. **Store refresh token**
-   - Save to database with expiration date
-   - Associate with userId for tracking
-
-6. **Return response**
-   - Include both tokens and user info
-
----
-
-## 4. Forgot Password Flow
-
-### Flow Diagram
-
-```
-┌─────────┐                ┌─────────┐                ┌──────────┐
-│ Client  │                │ Backend │                │  Email   │
-└────┬────┘                └────┬────┘                │ Service  │
-     │                          │                     └────┬─────┘
-     │ POST /auth/forgot-password│                         │
-     │ { email }                │                          │
-     ├─────────────────────────>│                          │
-     │                          │                          │
-     │                          │ 1. Find user by email    │
-     │                          │ 2. Generate reset token (1h expiry)
-     │                          │ 3. Store token hash in DB│
-     │                          │                          │
-     │                          │ Send reset email         │
-     │                          ├─────────────────────────>│
-     │                          │                          │
-     │ 200 OK                   │                          │
-     │ { message }              │                          │
-     │<─────────────────────────┤                          │
-     │                          │                          │
-     │ User receives email with reset link                 │
-     │                          │                          │
-```
-
-### API Endpoint
-
-**POST** `/v1/auth/forgot-password`
-
-### Request Body
-
-```json
-{
-  "email": "user@example.com"
-}
-```
-
-### Response (200 OK)
-
-```json
-{
-  "message": "If an account with that email exists, a password reset link has been sent."
-}
-```
-
-> **Security Note:** Always return success response even if email doesn't exist to prevent email enumeration attacks.
-
-### Backend Implementation Steps
-
-1. **Find user**
-   - Query by email
-   - Return 401 if not found (don't reveal if email exists)
-
-2. **✅ Check provider (CRITICAL)**
-   - Verify `user.provider === 'local'`
-   - Return 400 if OAuth user tries to reset password
-   - Message: "This account uses {provider} login. Please use '{provider}' to sign in."
-
-3. **Generate reset token**
-   - Create JWT with 1 hour expiration
-   - Include userId in payload
-   - Generate unique token ID (jti)
-
-4. **Store token**
-   - Hash token and store in `passwordResetTokens` table
-   - Include expiration timestamp
-   - Invalidate previous reset tokens for this user
-
-5. **Send email**
-   - Email subject: "Reset your Keramik Store password"
-   - Include reset link: `https://keramik-store.com/reset-password?token=xyz`
-   - Template with instructions and expiration time
-
-6. **Rate limiting**
-   - Max 3 requests per email per 1 hour
-   - Prevent abuse
-
-### Error Response for OAuth Users
-
-```json
-{
-  "statusCode": 400,
-  "message": "This account uses google login. Please use 'google' to sign in.",
-  "error": "Bad Request"
+  "role": "USER",
+  "iat": 1700000000,
+  "exp": 1700000900
 }
 ```
 
 ---
 
-## 5. Reset Password Flow
+## 3. Account Lockout
 
-### Flow Diagram
+The lockout mechanism is implemented entirely in the **Account aggregate** (domain layer).
 
-```
-┌─────────┐                ┌─────────┐
-│ Client  │                │ Backend │
-└────┬────┘                └────┬────┘
-     │                          │
-     │ User clicks reset link   │
-     │                          │
-     │ POST /auth/reset-password│
-     │ { token, newPassword }   │
-     ├─────────────────────────>│
-     │                          │
-     │                          │ 1. Verify token signature
-     │                          │ 2. Check token in DB (not used)
-     │                          │ 3. Check expiration (1 hour)
-     │                          │ 4. Hash new password
-     │                          │ 5. Update user password
-     │                          │ 6. Mark token as used
-     │                          │ 7. Invalidate all refresh tokens
-     │                          │
-     │ 200 OK                   │
-     │ { message }              │
-     │<─────────────────────────┤
-     │                          │
-     │ Redirect to /login       │
-     │                          │
-```
+| Condition | Action |
+|---|---|
+| Wrong password submitted | `account.recordFailedLoginAttempt()` increments `loginAttempts` |
+| `loginAttempts >= 5` | `lockedUntil = new Date(now + 30 * 60 * 1000)` |
+| `lockedUntil > now()` | `assertCanLogin()` throws `AccountLockedError` → HTTP 423 |
+| Successful login | `recordSuccessfulLogin()` resets `loginAttempts = 0`, `lockedUntil = null` |
 
-### API Endpoint
+**Auto-unlock:** The lock expires naturally when `now() > lockedUntil`. No cron job needed.
 
-**POST** `/v1/auth/reset-password`
+**Admin unlock:** An admin endpoint can call `account.activate()` and persist it to unlock ahead of schedule.
 
-### Request Body
-
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "newPassword": "NewSecurePass123!"
-}
-```
-
-### Response (200 OK)
-
-```json
-{
-  "message": "Password reset successful. You can now login with your new password."
-}
-```
-
-### Backend Implementation Steps
-
-1. **Verify token**
-   - Validate JWT signature
-   - Check expiration
-   - Extract userId from payload
-
-2. **Check token usage**
-   - Query `passwordResetTokens` table
-   - Ensure token hasn't been used
-   - Ensure token is within expiration window
-
-3. **Update password**
-   - Hash new password with bcrypt
-   - Update user's password field
-   - Update `passwordChangedAt` timestamp
-
-4. **Cleanup**
-   - Mark reset token as used
-   - Delete/invalidate old reset tokens
-   - Invalidate all existing refresh tokens (force re-login)
-
-5. **Send confirmation email**
-   - Notify user that password was changed
-   - Include timestamp and IP address
+**Email notification:** `AccountLockedEvent` triggers a BullMQ job to send a lock notification email.
 
 ---
 
-## 6. Change Password Flow (Authenticated)
+## 4. Token Refresh
 
-### Flow Diagram
+Refresh tokens use **rotation**: every successful refresh revokes the old token and issues a new pair.
 
 ```
-┌─────────┐                ┌─────────┐
-│ Client  │                │ Backend │
-└────┬────┘                └────┬────┘
-     │                          │
-     │ POST /auth/change-password│
-     │ Authorization: Bearer token│
-     │ { currentPassword,       │
-     │   newPassword }          │
-     ├─────────────────────────>│
-     │                          │
-     │                          │ 1. Verify access token
-     │                          │ 2. Get userId from token
-     │                          │ 3. Verify currentPassword
-     │                          │ 4. Hash newPassword
-     │                          │ 5. Update password
-     │                          │ 6. Invalidate refresh tokens
-     │                          │
-     │ 200 OK                   │
-     │ { message }              │
-     │<─────────────────────────┤
-     │                          │
+Client                         Auth Controller           Infrastructure
+  │                                  │                        │
+  │  POST /v1/auth/refresh           │                        │
+  │  Cookie: refresh_token=<jwt>     │                        │
+  │─────────────────────────────────>│                        │
+  │                                  │                        │
+  │                     JwtRefreshGuard extracts token from cookie
+  │                     Verify JWT signature & expiry          │
+  │                     Compute SHA-256(rawToken)              │
+  │                     Lookup RefreshToken by tokenHash ─────>DB
+  │                                  │                  <─────│
+  │                     [Not found / revoked / expired] → 401 │
+  │                                  │                        │
+  │                     Revoke old token: revokedAt = now()    │
+  │                     Issue new accessToken                  │
+  │                     Issue new refreshToken                 │
+  │                     SHA-256(newRefreshToken) → DB          │
+  │                     Set-Cookie: refresh_token=<new-jwt> (httpOnly)
+  │  200 { accessToken, expiresIn }   │                        │
+  │<─────────────────────────────────│                        │
 ```
 
-### API Endpoint
-
-**POST** `/v1/auth/change-password`
-
-**Headers:**
-```
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-```
-
-### Request Body
-
-```json
-{
-  "currentPassword": "CurrentPass123!",
-  "newPassword": "NewSecurePass123!"
-}
-```
-
-### Response (200 OK)
-
-```json
-{
-  "message": "Password changed successfully"
-}
-```
-
-### Backend Implementation Steps
-
-1. **Authenticate user**
-   - Verify access token
-   - Extract userId from token
-
-2. **✅ Check if password exists (CRITICAL)**
-   - If `user.password === null`, return 400
-   - Message: "No password set for this account. Use /auth/link-local-account to set a password first."
-   - This happens when OAuth users haven't set a password yet
-
-3. **Verify current password**
-   - Compare with stored hash
-   - Return 400 if incorrect
-
-4. **Validate new password**
-   - Check strength requirements
-   - Ensure different from current password
-
-5. **Update password**
-   - Hash new password
-   - Update database
-   - Update `passwordChangedAt` timestamp
-
-6. **Security actions**
-   - Invalidate all refresh tokens
-   - User must re-login with new password
-   - Send confirmation email
+**Reuse detection:** If a revoked refresh token is presented, all refresh tokens for that account are revoked (potential token theft).
 
 ---
 
-## 10. Link Local Account Flow (OAuth Users)
-
-### Use Case
-OAuth users (Google/Facebook) who want to set a password as backup login method
-
-### Flow Diagram
+## 5. Logout
 
 ```
-┌─────────┐                ┌─────────┐                ┌──────────┐
-│ Client  │                │ Backend │                │  Email   │
-└────┬────┘                └────┬────┘                │ Service  │
-     │                          │                     └────┬─────┘
-     │ POST /auth/link-local-account│                      │
-     │ Authorization: Bearer token  │                      │
-     │ { password }         │                              │
-     ├─────────────────────────────>│                      │
-     │                          │                          │
-     │                          │ 1. Verify access token   │
-     │                          │ 2. Check user.provider   │
-     │                          │ 3. Check if password exists│
-     │                          │ 4. Hash and set password │
-     │                          │ 5. Keep original provider│
-     │                          │                          │
-     │                          │ Send confirmation email  │
-     │                          ├─────────────────────────>│
-     │                          │                          │
-     │ 200 OK                   │                          │
-     │ { message }              │                          │
-     │<─────────────────────────┤                          │
-     │                          │                          │
-```
-
-### API Endpoint
-
-**POST** `/v1/auth/link-local-account`
-
-**Headers:**
-```
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-```
-
-### Request Body
-
-```json
-{
-  "password": "NewSecurePass123!"
-}
-```
-
-### Response (200 OK)
-
-```json
-{
-  "message": "Local login enabled successfully. You can now login with email and password."
-}
-```
-
-### Response (400 Bad Request) - Already Has Password
-
-```json
-{
-  "statusCode": 400,
-  "message": "Password is already set. Use /auth/change-password instead.",
-  "error": "Bad Request"
-}
-```
-
-### Response (400 Bad Request) - Local Account
-
-```json
-{
-  "statusCode": 400,
-  "message": "Account already uses email/password login",
-  "error": "Bad Request"
-}
-```
-
-### Backend Implementation Steps
-
-1. **Authenticate user**
-   - Verify access token
-   - Extract userId from token
-
-2. **Check provider**
-   - Only OAuth users (google, facebook) can link local account
-   - If `user.provider === 'local'`, return 400
-
-3. **Check if password exists**
-   - If `user.password !== null`, return 400
-   - Message: "Password is already set. Use change-password instead."
-
-4. **Validate password**
-   - Check strength requirements
-   - Minimum 8 characters, etc.
-
-5. **Set password**
-   - Hash password with bcrypt
-   - Update `user.password`
-   - Keep `user.provider` as original (google/facebook)
-   - User can now login with both methods
-
-6. **Send confirmation email**
-   - Notify user that local login is enabled
-   - Include timestamp and IP address
-
----
-
-## 11. Account Linking & Management
-
-### Scenario 1: OAuth User Wants Local Login
-
-**Problem:** User registered with Google/Facebook and wants to set password for backup login
-
-**Solution:** Use `/auth/link-local-account` endpoint
-- OAuth user sets a password
-- Original provider stays (google/facebook)
-- User can now login with:
-  - Email + Password (local)
-  - OAuth (Google/Facebook)
-
-### Scenario 2: Duplicate Accounts (Future Feature)
-
-**Problem:** User has 2 separate accounts:
-- `user@gmail.com` via email/password registration
-- `user@gmail.com` via Google OAuth
-
-**Current Behavior:**
-- Two separate accounts exist
-- User must choose which one to use
-
-**Recommended Future Solution:**
-1. Detect duplicate email during OAuth login
-2. Prompt user: "An account with this email already exists. Link accounts?"
-3. Require user to verify current account (enter password)
-4. Merge accounts:
-   - Keep user's chosen primary provider
-   - Preserve all user data
-   - Link both authentication methods
-
-### Scenario 3: Unlink Provider (Future Feature)
-
-**Use Case:** User wants to remove OAuth provider from their account
-
-**Requirements:**
-- Must have at least 1 authentication method remaining
-- If removing OAuth and no password set, require password setup first
-- Confirmation required before unlinking
-
----
-
-## 12. Error Handling & Edge Cases
-
-### Email Verification Errors
-
-**Token Expired:**
-```json
-{
-  "statusCode": 401,
-  "message": "Verification token has expired. Please request a new one.",
-  "error": "Unauthorized"
-}
-```
-
-**Token Already Used / Email Already Verified:**
-```json
-{
-  "statusCode": 200,
-  "message": "Email is already verified. You can login now."
-}
-```
-
-**Invalid Token:**
-```json
-{
-  "statusCode": 401,
-  "message": "Invalid verification token",
-  "error": "Unauthorized"
-}
-```
-
-### Password Reset Errors
-
-**Token Expired:**
-```json
-{
-  "statusCode": 401,
-  "message": "Reset token has expired. Please request a new one.",
-  "error": "Unauthorized"
-}
-```
-
-**OAuth User Attempting Reset:**
-```json
-{
-  "statusCode": 400,
-  "message": "This account uses google login. Please use 'google' to sign in.",
-  "error": "Bad Request"
-}
-```
-
-**Token Already Used:**
-```json
-{
-  "statusCode": 400,
-  "message": "This reset link has already been used. Please request a new one.",
-  "error": "Bad Request"
-}
-```
-
-### Login Errors
-
-**Invalid Credentials:**
-```json
-{
-  "statusCode": 401,
-  "message": "Invalid email or password",
-  "error": "Unauthorized"
-}
-```
-
-**Email Not Verified:**
-```json
-{
-  "statusCode": 401,
-  "message": "Please verify your email before logging in. Check your inbox for verification link.",
-  "error": "Unauthorized"
-}
-```
-
-**Account Inactive:**
-```json
-{
-  "statusCode": 403,
-  "message": "Your account is inactive. Please contact support.",
-  "error": "Forbidden"
-}
-```
-
-**Account Disabled:**
-```json
-{
-  "statusCode": 403,
-  "message": "Your account has been disabled. Please contact support.",
-  "error": "Forbidden"
-}
-```
-
-**Too Many Login Attempts:**
-```json
-{
-  "statusCode": 429,
-  "message": "Too many login attempts. Please try again in 15 minutes.",
-  "error": "Too Many Requests",
-  "retryAfter": 900
-}
-```
-
-### Change Password Errors
-
-**OAuth User Without Password:**
-```json
-{
-  "statusCode": 400,
-  "message": "No password set for this account. Use /auth/link-local-account to set a password first.",
-  "error": "Bad Request"
-}
-```
-
-**Current Password Incorrect:**
-```json
-{
-  "statusCode": 400,
-  "message": "Current password is incorrect",
-  "error": "Bad Request"
-}
-```
-
-**New Password Same as Current:**
-```json
-{
-  "statusCode": 400,
-  "message": "New password must be different from current password",
-  "error": "Bad Request"
-}
-```
-
-### Resend Verification Errors
-
-**OAuth User:**
-```json
-{
-  "statusCode": 400,
-  "message": "This account uses google login and doesn't require email verification.",
-  "error": "Bad Request"
-}
-```
-
-**Already Verified:**
-```json
-{
-  "statusCode": 400,
-  "message": "Email is already verified",
-  "error": "Bad Request"
-}
-```
-
-### Token Refresh Errors
-
-**Invalid Refresh Token:**
-```json
-{
-  "statusCode": 401,
-  "message": "Invalid refresh token",
-  "error": "Unauthorized"
-}
-```
-
-**Token Revoked:**
-```json
-{
-  "statusCode": 401,
-  "message": "Refresh token has been revoked",
-  "error": "Unauthorized"
-}
+Client                         Auth Controller           Infrastructure
+  │                                  │                        │
+  │  POST /v1/auth/logout            │                        │
+  │  Authorization: Bearer <jwt>     │                        │
+  │  Cookie: refresh_token=<jwt>     │                        │
+  │─────────────────────────────────>│                        │
+  │                                  │                        │
+  │                     JwtAuthGuard validates access token    │
+  │                     Compute SHA-256(refreshToken from cookie)
+  │                     Lookup + revoke RefreshToken in DB ───>DB
+  │                     Add access token to Redis blacklist    │
+  │                       key: "blacklist:<jti>"               │
+  │                       TTL: remaining access token TTL      │
+  │                     Clear Set-Cookie: refresh_token=""     │
+  │  200 { message: "Logout successful" }                      │
+  │<─────────────────────────────────│                        │
 ```
 
 ---
 
-## 13. Rate Limiting Configuration
+## 6. Forgot Password / Reset Password
 
-### Per Endpoint Limits
+### 6.1 Forgot Password
 
-| Endpoint | Limit | Window | Tracking Method |
-|----------|-------|--------|-----------------|
-| `/auth/register` | 5 | 1 hour | IP + Email |
-| `/auth/login` | 5 | 15 min | IP + Email |
-| `/auth/verify-email` | No limit | - | Token-based (single use) |
-| `/auth/resend-verification` | 3 | 1 hour | Email |
-| `/auth/forgot-password` | 3 | 1 hour | Email |
-| `/auth/reset-password` | 10 | 1 hour | Token-based |
-| `/auth/change-password` | 5 | 1 hour | User ID |
-| `/auth/link-local-account` | 5 | 1 hour | User ID |
-| `/auth/refresh` | 10 | 1 min | Refresh Token |
-| `/auth/logout` | 20 | 1 min | Access Token |
-| OAuth Callbacks | 10 | 1 min | IP |
-
-### Rate Limit Response Headers
-
-```http
-HTTP/1.1 200 OK
-X-RateLimit-Limit: 5
-X-RateLimit-Remaining: 3
-X-RateLimit-Reset: 1640995200
+```
+POST /v1/auth/forgot-password
+{ email: "user@example.com" }
 ```
 
-### Rate Limit Exceeded Response
-
-```json
-{
-  "statusCode": 429,
-  "message": "Too many requests. Please try again later.",
-  "error": "Too Many Requests",
-  "retryAfter": 900
-}
-```
-
-**Response Headers:**
-```http
-HTTP/1.1 429 Too Many Requests
-X-RateLimit-Limit: 5
-X-RateLimit-Remaining: 0
-X-RateLimit-Reset: 1640995200
-Retry-After: 900
-```
-
-### Implementation Notes
-
-- **IP Tracking**: Use `X-Forwarded-For` header behind proxies
-- **Email Tracking**: Prevent email enumeration by still rate limiting even if email doesn't exist
-- **Token Tracking**: Track by token ID (jti) to prevent token replay
-- **Storage**: Use Redis for distributed rate limiting
-- **Bypass**: Allow admins to bypass rate limits (careful!)
+**Flow:**
+1. Look up account by email
+2. `account.assertCanForgotPassword()` — blocks DELETED/SUSPENDED/OAuth-only accounts
+3. Generate `crypto.randomBytes(32)` → raw token
+4. Compute `SHA-256(rawToken)` → save as `VerificationToken` with `type = PASSWORD_RESET`, expires 1 hour
+5. Dispatch BullMQ job: `send-password-reset-email` with the **raw** token in the link
+6. **Always return `200`** regardless of whether the email exists (prevents email enumeration)
 
 ---
 
-## 14. Security Audit Logging
+### 6.2 Reset Password
 
-### Events to Log
+```
+POST /v1/auth/reset-password
+{ token: "<raw-token-from-email>", newPassword: "NewPass123!" }
+```
 
-#### Authentication Events
-- `AUTH_REGISTER` - New user registration
-- `AUTH_EMAIL_VERIFIED` - Email verification completed
-- `AUTH_LOGIN_SUCCESS` - Successful login
-- `AUTH_LOGIN_FAILED` - Failed login attempt
-- `AUTH_LOGOUT` - User logout
-- `AUTH_TOKEN_REFRESHED` - Token refresh
-- `AUTH_PASSWORD_RESET_REQUESTED` - Password reset email sent
-- `AUTH_PASSWORD_RESET_COMPLETED` - Password successfully reset
-- `AUTH_PASSWORD_CHANGED` - Password changed (authenticated)
-- `AUTH_OAUTH_LOGIN` - OAuth login (Google/Facebook)
-- `AUTH_LOCAL_ACCOUNT_LINKED` - Local account linked to OAuth
-- `AUTH_RESEND_VERIFICATION` - Verification email resent
+**Flow:**
+1. Compute `SHA-256(rawToken)`
+2. Lookup `VerificationToken` by hash where `type = PASSWORD_RESET`
+3. Validate: not expired, not already used, account is in a valid state
+4. `account.resetPassword(newPasswordHash)` — Argon2id hashes the new password, sets `lastPasswordChangedAt`
+5. Mark token `usedAt = now()`
+6. **Revoke all active refresh tokens** for this account (all sessions)
+7. Emit `AccountPasswordResetEvent`
 
-#### Security Events
-- `AUTH_SUSPICIOUS_LOGIN` - Login from unusual location/device
-- `AUTH_BRUTE_FORCE_DETECTED` - Multiple failed login attempts
-- `AUTH_RATE_LIMIT_EXCEEDED` - Rate limit hit
-- `AUTH_TOKEN_BLACKLISTED` - Token manually revoked
-- `AUTH_INVALID_TOKEN` - Invalid token used
-- `AUTH_EXPIRED_TOKEN` - Expired token attempted
-- `AUTH_ACCOUNT_LOCKED` - Account locked due to suspicious activity
-- `AUTH_ACCOUNT_UNLOCKED` - Account unlocked by admin
+---
 
-### Log Structure
+## 7. Change Password
+
+For authenticated users who know their current password. **Not available for OAuth-only accounts.**
+
+```
+POST /v1/auth/change-password
+Authorization: Bearer <access_token>
+{ currentPassword: "OldPass123!", newPassword: "NewPass123!" }
+```
+
+**Flow:**
+1. JwtAuthGuard — extract account ID from JWT
+2. Load account from DB
+3. `account.assertCanChangePassword()` — blocks accounts without a password hash
+4. `Argon2.verify(currentPassword, account.passwordHash)` — mismatch → 400
+5. `account.changePassword(newPasswordHash)` — updates hash, emits `AccountPasswordChangedEvent`
+6. Optionally revoke other active refresh token sessions (keep current session alive)
+7. Dispatch notification email: `send-password-changed-email`
+
+---
+
+## 8. OAuth2 Login (Google / GitHub / Facebook)
+
+### 8.1 OAuth2 Initiation
+
+```
+GET /v1/auth/google     (Google)
+GET /v1/auth/github     (GitHub)
+GET /v1/auth/facebook   (Facebook)
+```
+
+1. Generate cryptographically random `state` value (`crypto.randomBytes(16).toString('hex')`)
+2. Store `state` in Redis with TTL 5 minutes: `oauth:state:<state> = 1`
+3. Redirect to provider's OAuth consent page with the `state` parameter
+
+---
+
+### 8.2 OAuth2 Callback
+
+```
+GET /v1/auth/google/callback?code=...&state=...
+GET /v1/auth/github/callback?code=...&state=...
+GET /v1/auth/facebook/callback?code=...&state=...
+```
+
+```
+Provider              Passport Strategy              Use Case              Domain
+   │                        │                           │                    │
+   │  callback?code&state   │                           │                    │
+   │───────────────────────>│                           │                    │
+   │                        │                           │                    │
+   │                Validate state from Redis (CSRF check)                   │
+   │                [state not found → 400 INVALID_STATE]                   │
+   │                Delete state from Redis                                  │
+   │                        │                           │                    │
+   │                Exchange code for tokens with provider                   │
+   │                Fetch user profile from provider                         │
+   │                        │                           │                    │
+   │                        │  { providerId, email, name, avatar }           │
+   │                        │──────────────────────────>│                    │
+   │                        │                           │                    │
+   │                        │               Find account by (provider, providerId)
+   │                        │                           │                    │
+   │                        │            [New user — no account found]       │
+   │                        │               Account.createFromOAuth()────────>
+   │                        │               status = ACTIVE (pre-verified)   │
+   │                        │               emailVerified = true              │
+   │                        │               Create User profile               │
+   │                        │               Link provider                    │
+   │                        │               Emit AccountCreatedEvent         │
+   │                        │               Emit AccountProviderLinkedEvent  │
+   │                        │                           │<───────────────────│
+   │                        │            [Returning user]                    │
+   │                        │               account.recordSuccessfulOAuthLogin()
+   │                        │               Update OAuth tokens in AuthProvider table
+   │                        │                           │                    │
+   │                Issue accessToken + refreshToken    │                    │
+   │                SHA-256(refreshToken) → DB                               │
+   │                                                                         │
+   │  Redirect to frontend with tokens (query params or secure fragment)     │
+```
+
+**Account merging:** If the provider email matches an existing local account, the OAuth provider is **linked** to that existing account instead of creating a duplicate.
+
+---
+
+## 9. OAuth Provider Linking & Unlinking
+
+### 9.1 Link OAuth Provider to Existing Account
+
+Used when a user with a local (email/password) account wants to add Google/GitHub/Facebook login.
+
+```
+1. User authenticates (JWT)
+2. GET /v1/auth/google  (with JWT present)
+3. Google callback → GoogleCallbackUseCase
+4. Account found by (provider, providerId) → already linked? → 409
+5. Account loaded from JWT sub → account.linkProvider(providerVO)
+6. Save AuthProvider record in DB
+7. Emit AccountProviderLinkedEvent
+```
+
+### 9.2 Unlink OAuth Provider
+
+```
+DELETE /v1/auth/providers/google
+Authorization: Bearer <access_token>
+```
+
+**Flow:**
+1. Load account
+2. Validate: at least one auth method remains after unlinking (cannot unlink last provider if no password set)
+3. `account.unlinkProvider(AuthProvider.GOOGLE)`
+4. Delete `AuthProvider` record from DB
+5. Emit `AccountProviderUnlinkedEvent`
+
+### 9.3 Add Password to OAuth-only Account
+
+Used when a user registered via OAuth and wants to set a password.
+
+```
+POST /v1/auth/link-local
+Authorization: Bearer <access_token>
+{ password: "NewPass123!" }
+```
+
+**Flow:**
+1. Load account
+2. Verify account has no password yet
+3. `account.changePassword(newHash)` — sets password for the first time
+4. Emit `AccountPasswordChangedEvent`
+
+---
+
+## 10. Two-Factor Authentication (TOTP)
+
+### 10.1 Enable 2FA
+
+```
+POST /v1/auth/2fa/enable
+Authorization: Bearer <access_token>
+```
+
+**Flow:**
+1. Load account, verify `twoFactorEnabled = false`
+2. Generate TOTP secret
+3. Encrypt secret at app layer before storing temporarily
+4. Generate QR code URI (`otpauth://totp/...`)
+5. Generate 8 backup codes (`crypto.randomBytes(4).toString('hex')` each)
+6. Argon2-hash each backup code before storing
+7. Return: `{ qrCodeUri, backupCodes }` — **backup codes shown once only**
+8. **2FA is not active yet** — must confirm
+
+### 10.2 Confirm 2FA Setup
+
+```
+POST /v1/auth/2fa/confirm
+Authorization: Bearer <access_token>
+{ totpCode: "123456" }
+```
+
+**Flow:**
+1. Verify TOTP code against stored (encrypted) secret
+2. `account.enableTwoFactor(secret, backupCodes)`
+3. `twoFactorEnabled = true`
+4. Emit `AccountTwoFactorEnabledEvent`
+
+### 10.3 2FA Login Flow
+
+```
+Step 1: POST /v1/auth/login  (email + password)
+→ Password valid, 2FA enabled
+→ Issue short-lived partial JWT (twoFactorPending: true, exp: 5min)
+→ 200 { requiresTwoFactor: true, tempToken }
+
+Step 2: POST /v1/auth/2fa/verify
+Authorization: Bearer <partial-jwt>
+{ code: "123456" }   ← TOTP code or single-use backup code
+
+→ Verify TOTP against decrypted secret
+   OR: hash(code) → compare against stored hashed backup codes
+→ If backup code: remove it from list (single-use)
+→ Issue full accessToken + refreshToken
+→ 200 { accessToken, expiresIn }
+```
+
+### 10.4 Disable 2FA
+
+```
+POST /v1/auth/2fa/disable
+Authorization: Bearer <access_token>
+{ totpCode: "123456" }
+```
+
+**Flow:**
+1. Verify TOTP code
+2. `account.disableTwoFactor()` — clears `twoFactorSecret` and `twoFactorBackupCodes`
+3. Emit `AccountTwoFactorDisabledEvent`
+
+---
+
+## 11. Account Reactivation
+
+Accounts with `status = INACTIVE` can be reactivated by the user.
+
+### 11.1 Request Reactivation
+
+```
+POST /v1/auth/reactivate
+{ email: "user@example.com" }
+```
+
+**Flow:**
+1. Find account by email
+2. Validate `status = INACTIVE`
+3. Generate token → `SHA-256(token)` → save as `VerificationToken`, `type = ACCOUNT_REACTIVATION`, expires 24h
+4. Dispatch reactivation email
+5. Return `200` regardless (no email enumeration)
+
+### 11.2 Confirm Reactivation
+
+```
+POST /v1/auth/reactivate/confirm
+{ token: "<raw-token>" }
+```
+
+**Flow:**
+1. Compute `SHA-256(token)`, lookup in DB
+2. Validate: not expired, not used, account is `INACTIVE`
+3. `account.activate()` — sets `status = ACTIVE`
+4. Mark token as used
+5. Emit `AccountReactivatedEvent`
+
+---
+
+## 12. Token Security Model
+
+### Token Storage Summary
+
+| Token Type | Sent To Client As | Stored In DB As | Expiry |
+|---|---|---|---|
+| Access token | JWT in response body | Not stored; revoked tokens kept in Redis blacklist | 15 min |
+| Refresh token | JWT in httpOnly cookie | `SHA-256(token)` in `refresh_tokens` | 30 days |
+| Email verification token | Raw bytes in email link | `SHA-256(token)` in `verification_tokens` | 24 hours |
+| Password reset token | Raw bytes in email link | `SHA-256(token)` in `verification_tokens` | 1 hour |
+| Reactivation token | Raw bytes in email link | `SHA-256(token)` in `verification_tokens` | 24 hours |
+
+### Why SHA-256 Hashing?
+
+Storing raw tokens would allow a database attacker to use them immediately. Storing only the hash means:
+- The raw token is a secret the server never persists
+- Even if the DB is fully compromised, hashed tokens cannot be reversed
+- This principle mirrors how passwords are stored with Argon2
+
+### Access Token Revocation (Blacklist)
+
+Access tokens are stateless JWTs. On logout:
+- The token's `jti` (JWT ID claim) is stored in Redis: `blacklist:<jti>` with TTL = remaining token lifetime
+- `JwtAuthGuard` checks the Redis blacklist on every authenticated request
+- The blacklist entry is automatically cleaned up when the TTL expires
+
+---
+
+## 13. Rate Limiting Reference
+
+| Endpoint | Max Requests | Window |
+|---|---|---|
+| `POST /auth/register` | 5 | 1 hour |
+| `POST /auth/login` | 10 | 15 minutes |
+| `POST /auth/forgot-password` | 3 | 1 hour |
+| `POST /auth/resend-verification` | 3 | 1 hour |
+| `POST /auth/refresh` | 20 | 15 minutes |
+| `GET /auth/*/callback` | 10 | 1 minute |
+| Global default | 100 | 1 minute |
+
+**Response on rate limit:** `429 Too Many Requests`, header `Retry-After: <seconds>`
+
+---
+
+## 14. Domain Events & Audit Log
+
+### Account Domain Events
+
+| Event | Trigger | Side Effects |
+|---|---|---|
+| `AccountCreatedEvent` | `Account.create()` / `createFromOAuth()` | Send verification email (local accounts) |
+| `AccountEmailVerifiedEvent` | `account.verifyEmail()` | Status set to ACTIVE |
+| `AccountLoggedInEvent` | `account.recordSuccessfulLogin()` | Write LoginHistory (success) |
+| `AccountLoginFailedEvent` | `account.recordFailedLoginAttempt()` | Write LoginHistory (failure) |
+| `AccountLockedEvent` | Failed attempts >= 5 | Send lock notification email |
+| `AccountPasswordChangedEvent` | `account.changePassword()` | Send password-changed email |
+| `AccountPasswordResetEvent` | `account.resetPassword()` | Revoke all refresh tokens |
+| `AccountProviderLinkedEvent` | `account.linkProvider()` | — |
+| `AccountProviderUnlinkedEvent` | `account.unlinkProvider()` | — |
+| `AccountTwoFactorEnabledEvent` | `account.enableTwoFactor()` | — |
+| `AccountTwoFactorDisabledEvent` | `account.disableTwoFactor()` | — |
+| `AccountDeactivatedEvent` | `account.deactivate()` | Revoke all sessions |
+| `AccountReactivatedEvent` | `account.activate()` | — |
+| `AccountSuspendedEvent` | `account.suspend()` | Send suspension email |
+| `AccountDeletedEvent` | `account.softDelete()` | Revoke all sessions |
+
+### LoginHistory Record
 
 ```typescript
-interface AuditLog {
-  id: string;
-  userId: string | null; // null for failed login attempts
-  event: string;
-  status: 'SUCCESS' | 'FAILURE' | 'WARNING';
-  ipAddress: string;
-  userAgent: string;
-  metadata: Record<string, any>;
-  timestamp: Date;
-}
-```
-
-### Example Log Entries
-
-**Successful Login:**
-```json
 {
-  "id": "log_abc123",
-  "userId": "user_xyz789",
-  "event": "AUTH_LOGIN_SUCCESS",
-  "status": "SUCCESS",
-  "ipAddress": "192.168.1.1",
-  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0",
-  "metadata": {
-    "provider": "local",
-    "device": "Chrome on Windows",
-    "location": "Jakarta, Indonesia"
-  },
-  "timestamp": "2026-01-18T10:30:00Z"
+  accountId: string;
+  ipAddress: string | null;       // IPv4 or IPv6
+  userAgent: string | null;
+  location: string | null;        // Geo-derived, e.g. "Jakarta, ID"
+  success: boolean;
+  failReason: string | null;      // "INVALID_PASSWORD" | "ACCOUNT_LOCKED" | ...
+  createdAt: Date;                // immutable
 }
 ```
 
-**Failed Login:**
-```json
-{
-  "id": "log_abc124",
-  "userId": null,
-  "event": "AUTH_LOGIN_FAILED",
-  "status": "FAILURE",
-  "ipAddress": "192.168.1.1",
-  "userAgent": "Mozilla/5.0...",
-  "metadata": {
-    "email": "user@example.com",
-    "reason": "invalid_credentials",
-    "attemptCount": 3
-  },
-  "timestamp": "2026-01-18T10:31:00Z"
-}
-```
-
-**OAuth Login:**
-```json
-{
-  "id": "log_abc125",
-  "userId": "user_xyz789",
-  "event": "AUTH_OAUTH_LOGIN",
-  "status": "SUCCESS",
-  "ipAddress": "192.168.1.1",
-  "userAgent": "Mozilla/5.0...",
-  "metadata": {
-    "provider": "google",
-    "providerId": "1234567890",
-    "newUser": false
-  },
-  "timestamp": "2026-01-18T10:32:00Z"
-}
-```
-
-**Local Account Linked:**
-```json
-{
-  "id": "log_abc127",
-  "userId": "user_xyz789",
-  "event": "AUTH_LOCAL_ACCOUNT_LINKED",
-  "status": "SUCCESS",
-  "ipAddress": "192.168.1.1",
-  "userAgent": "Mozilla/5.0...",
-  "metadata": {
-    "previousProvider": "google",
-    "passwordSet": true
-  },
-  "timestamp": "2026-01-18T10:35:00Z"
-}
-```
-
-**Suspicious Activity:**
-```json
-{
-  "id": "log_abc126",
-  "userId": "user_xyz789",
-  "event": "AUTH_SUSPICIOUS_LOGIN",
-  "status": "WARNING",
-  "ipAddress": "203.0.113.42",
-  "userAgent": "Mozilla/5.0...",
-  "metadata": {
-    "reason": "unusual_location",
-    "previousLocation": "Jakarta, Indonesia",
-    "currentLocation": "Moscow, Russia",
-    "timeDifference": "2 hours"
-  },
-  "timestamp": "2026-01-18T12:00:00Z"
-}
-```
-
-### Monitoring & Alerts
-
-**Alert Triggers:**
-- 5+ failed login attempts from same IP in 5 minutes
-- Login from new country/device without 2FA
-- Multiple password reset requests in short time
-- Token refresh from different IP than original login
-- Sudden spike in registration from same IP range
-
-**Notification Methods:**
-- Email to user for suspicious activity
-- Email to admin for security events
-- Slack/Discord webhook for critical events
-- Dashboard for real-time monitoring
+Every login attempt is recorded immutably. This enables:
+- "New login from unrecognized device" notifications
+- Suspicious activity detection
+- Security audit trails
 
 ---
 
-## 15. Security Best Practices
-
-### Flow Diagram
-
-```
-┌─────────┐     ┌─────────┐     ┌──────────┐     ┌─────────┐
-│ Client  │     │ Backend │     │  OAuth   │     │  Email  │
-│         │     │         │     │ Provider │     │ Service │
-└────┬────┘     └────┬────┘     └────┬─────┘     └────┬────┘
-     │               │               │                 │
-     │ Click "Login with Google"     │                 │
-     ├──────────────>│               │                 │
-     │               │               │                 │
-     │ Redirect to Google            │                 │
-     │ /auth/google  │               │                 │
-     ├──────────────>│               │                 │
-     │               │               │                 │
-     │               │ Redirect to OAuth consent       │
-     │<──────────────┤───────────────>│                 │
-     │               │               │                 │
-     │ User approves │               │                 │
-     ├───────────────┼───────────────>│                 │
-     │               │               │                 │
-     │               │ Callback with auth code         │
-     │               │<───────────────┤                 │
-     │               │               │                 │
-     │               │ Exchange code for tokens        │
-     │               ├───────────────>│                 │
-     │               │               │                 │
-     │               │ User profile  │                 │
-     │               │<───────────────┤                 │
-     │               │               │                 │
-     │               │ 1. Find/create user             │
-     │               │ 2. Set emailVerified = true     │
-     │               │ 3. Generate JWT tokens          │
-     │               │               │                 │
-     │ 200 OK        │               │                 │
-     │ { accessToken,│               │                 │
-     │   refreshToken,│              │                 │
-     │   user }      │               │                 │
-     │<──────────────┤               │                 │
-     │               │               │                 │
-```
-
-### Google OAuth2 Endpoints
-
-**Initiate:** `GET /v1/auth/google`
-
-**Callback:** `GET /v1/auth/google/callback?code=xxx&state=yyy`
-
-### Facebook OAuth2 Endpoints
-
-**Initiate:** `GET /v1/auth/facebook`
-
-**Callback:** `GET /v1/auth/facebook/callback?code=xxx&state=yyy`
-
-### Response (200 OK)
-
-```json
-{
-  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "expiresIn": 900,
-  "user": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "email": "user@gmail.com",
-    "name": "John Doe",
-    "role": "CUSTOMER",
-    "provider": "google",
-    "providerId": "1234567890",
-    "emailVerified": true,
-    "createdAt": "2025-12-30T10:00:00Z"
-  }
-}
-```
-
-### Backend Implementation Steps
-
-1. **Redirect to OAuth provider**
-   - Generate state parameter (CSRF protection)
-   - Include scope: `email profile`
-   - Redirect user to OAuth consent screen
-
-2. **Handle callback**
-   - Verify state parameter
-   - Exchange authorization code for access token
-
-3. **Fetch user profile**
-   - Call provider's API to get user info
-   - Extract email, name, profile picture
-
-4. **Find or create user**
-   - Search by `provider` + `providerId`
-   - If not found, search by email
-   - If still not found, create new user
-
-5. **Set user properties**
-   - `provider: 'google'` or `'facebook'`
-   - `providerId: <oauth_user_id>`
-   - `emailVerified: true` (OAuth emails are pre-verified)
-   - `password: null` (OAuth users don't have passwords)
-
-6. **Generate JWT tokens**
-   - Same as email/password login
-   - Return access + refresh tokens
-
----
-
-## 8. Token Refresh Flow
-
-### Flow Diagram
-
-```
-┌─────────┐                ┌─────────┐
-│ Client  │                │ Backend │
-└────┬────┘                └────┬────┘
-     │                          │
-     │ Access token expired     │
-     │ (401 from API call)      │
-     │                          │
-     │ POST /auth/refresh       │
-     │ { refreshToken }         │
-     ├─────────────────────────>│
-     │                          │
-     │                          │ 1. Verify refresh token
-     │                          │ 2. Check token in DB
-     │                          │ 3. Check expiration
-     │                          │ 4. Generate new access token
-     │                          │ 5. Optionally rotate refresh token
-     │                          │
-     │ 200 OK                   │
-     │ { accessToken,           │
-     │   expiresIn }            │
-     │<─────────────────────────┤
-     │                          │
-     │ Retry original API call  │
-     │                          │
-```
-
-### API Endpoint
-
-**POST** `/v1/auth/refresh`
-
-### Request Body
-
-```json
-{
-  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-}
-```
-
-### Response (200 OK)
-
-```json
-{
-  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "expiresIn": 900
-}
-```
-
-### Backend Implementation Steps
-
-1. **Verify refresh token**
-   - Validate JWT signature
-   - Check expiration
-   - Extract userId and token ID (jti)
-
-2. **Check database**
-   - Query `refreshTokens` table
-   - Ensure token exists and is not revoked
-   - Verify userId matches
-
-3. **Generate new access token**
-   - Create new JWT with 15 minutes expiration
-   - Include userId, email, role
-
-4. **Optional: Refresh token rotation**
-   - Generate new refresh token
-   - Revoke old refresh token
-   - Return new refresh token (enhanced security)
-
----
-
-## 9. Logout Flow
-
-### Flow Diagram
-
-```
-┌─────────┐                ┌─────────┐
-│ Client  │                │ Backend │
-└────┬────┘                └────┬────┘
-     │                          │
-     │ POST /auth/logout        │
-     │ Authorization: Bearer token│
-     ├─────────────────────────>│
-     │                          │
-     │                          │ 1. Verify access token
-     │                          │ 2. Extract userId
-     │                          │ 3. Revoke refresh tokens
-     │                          │ 4. Add access token to blacklist
-     │                          │
-     │ 200 OK                   │
-     │ { message }              │
-     │<─────────────────────────┤
-     │                          │
-     │ Clear tokens from storage│
-     │ Redirect to /login       │
-     │                          │
-```
-
-### API Endpoint
-
-**POST** `/v1/auth/logout`
-
-**Headers:**
-```
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-```
-
-### Response (200 OK)
-
-```json
-{
-  "message": "Logout successful"
-}
-```
-
-### Backend Implementation Steps
-
-1. **Verify access token**
-   - Extract userId from token
-
-2. **Revoke refresh tokens**
-   - Delete all refresh tokens for user
-   - Or mark as revoked in database
-
-3. **Blacklist access token (If the access token is in long time)**
-   - Add token to Redis blacklist
-   - TTL = token remaining lifetime
-   - Check blacklist on all authenticated requests
-
-4. **Return success**
-   - Frontend clears tokens from storage
-
----
-
-## 10. Security Best Practices
-
-### Password Security
-
-✅ **DO:**
-- Use bcrypt with salt rounds ≥ 12
-- Enforce minimum 8 characters
-- Require mix of uppercase, lowercase, numbers, symbols (optional)
-- Implement password strength meter on frontend
-- Hash passwords before storing
-
-❌ **DON'T:**
-- Store passwords in plain text
-- Use weak hashing algorithms (MD5, SHA1)
-- Share passwords via email
-- Log passwords in application logs
-
-### Token Security
-
-✅ **DO:**
-- Use short-lived access tokens (15 minutes)
-- Use longer refresh tokens (7 days)
-- Implement token rotation for refresh tokens
-- Store refresh tokens securely in database
-- Use HTTPS for all token transmission
-- Implement token blacklisting for logout
-- Sign tokens with strong secret key (min 256 bits)
-
-❌ **DON'T:**
-- Store access tokens in localStorage (use httpOnly cookies if possible)
-- Use long-lived access tokens (>1 hour)
-- Expose JWT secret key
-- Reuse token IDs (jti)
-
-### Rate Limiting
-
-| Endpoint | Limit | Window |
-|----------|-------|--------|
-| `/auth/register` | 3 requests | 15 minutes |
-| `/auth/login` | 5 attempts | 15 minutes |
-| `/auth/forgot-password` | 3 requests | 15 minutes |
-| `/auth/resend-verification` | 3 requests | 15 minutes |
-| `/auth/refresh` | 10 requests | 1 minute |
-
-### Email Security
-
-✅ **DO:**
-- Use verified email service (SendGrid, AWS SES, Mailgun)
-- Implement SPF, DKIM, DMARC records
-- Include expiration time in emails
-- Use HTTPS links only
-- Rate limit email sending
-- Log email delivery status
-
-❌ **DON'T:**
-- Include sensitive data in email subject
-- Use GET requests for sensitive actions (use POST)
-- Send passwords via email
-
-### Session Security
-
-✅ **DO:**
-- Implement CSRF protection
-- Use secure, httpOnly cookies
-- Set SameSite=Strict or Lax
-- Implement device tracking (optional)
-- Log authentication events
-- Monitor for suspicious activity
-
-❌ **DON'T:**
-- Allow concurrent sessions from different IPs (flag as suspicious)
-- Skip user-agent validation
-- Ignore unusual login patterns
-
-### OAuth2 Security
-
-✅ **DO:**
-- Validate state parameter (CSRF protection)
-- Use PKCE for mobile apps
-- Verify redirect URIs
-- Store OAuth tokens securely
-- Implement scope restrictions
-- Handle OAuth errors gracefully
-
-❌ **DON'T:**
-- Skip state parameter validation
-- Trust OAuth profile data without verification
-- Allow open redirect vulnerabilities
-
----
-
-## 📊 Complete Authentication Flow Summary
-
-```
-Registration Flow:
-Register → Send Email → Verify Email → Login
-
-Login Flow:
-Login → Validate Credentials → Return Tokens → Access Protected Routes
-
-Forgot Password Flow:
-Request Reset → Send Email → Reset Password → Login
-
-Password Change Flow:
-Authenticate → Verify Current Password → Update → Invalidate Sessions
-
-OAuth2 Flow:
-Redirect to Provider → User Approves → Callback → Return Tokens
-
-Token Management:
-Access Token Expires → Refresh Token → New Access Token → Continue
-
-Logout Flow:
-Revoke Tokens → Blacklist Access Token → Clear Client Storage
-```
-
----
-
-## 🔧 Implementation Checklist
-
-### Backend
-
-- [ ] User model with `emailVerified`, `provider`, `providerId` fields
-- [ ] Password hashing with bcrypt (12+ rounds)
-- [ ] JWT token generation (access + refresh)
-- [ ] Refresh token storage in database
-- [ ] Token blacklist (Redis recommended)
-- [ ] Email service integration (SendGrid/AWS SES)
-- [ ] Email templates (verification, password reset, confirmation)
-- [ ] Rate limiting middleware
-- [ ] OAuth2 Passport strategies (Google, Facebook)
-- [ ] Password validation (strength, common passwords)
-- [ ] Audit logging for authentication events
-- [ ] CSRF protection
-- [ ] Input sanitization and validation
-- [ ] **Provider validation** for forgot-password
-- [ ] **Provider validation** for resend-verification
-- [ ] **Link local account** endpoint for OAuth users
-- [ ] **Password existence check** in change-password
-- [ ] **Security audit logging** system
-- [ ] **Rate limiting** per email (not just IP)
-
-### Frontend
-
-- [ ] Registration form with validation
-- [ ] Email verification page
-- [ ] Login form with error handling
-- [ ] Forgot password flow
-- [ ] Reset password page
-- [ ] Change password form
-- [ ] OAuth2 buttons (Google, Facebook)
-- [ ] Token storage (secure method)
-- [ ] Automatic token refresh interceptor
-- [ ] Logout functionality
-- [ ] Password strength indicator
-- [ ] Loading states and error messages
-- [ ] Redirect after authentication
-- [ ] **Link local account** page for OAuth users
-- [ ] **Error handling** for all edge cases
-- [ ] **Rate limit** feedback to users
-
-### Database
-
-- [ ] Users table with authentication fields
-- [ ] RefreshTokens table
-- [ ] PasswordResetTokens table
-- [ ] AuditLog table for authentication events
-- [ ] Indexes on email, provider, providerId
-
-### Email Templates
-
-- [ ] Welcome email
-- [ ] Email verification
-- [ ] Password reset request
-- [ ] Password changed confirmation
-- [ ] New login notification (optional)
-- [ ] Suspicious activity alert (optional)
-- [ ] **Local account linked** confirmation
-
----
-
-## 📚 Additional Resources
-
-- [OWASP Authentication Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html)
-- [JWT Best Practices](https://tools.ietf.org/html/rfc8725)
-- [OAuth 2.0 Security Best Practices](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-security-topics)
-- [NestJS Passport Documentation](https://docs.nestjs.com/security/authentication)
-- [Bcrypt Best Practices](https://github.com/kelektiv/node.bcrypt.js#security-issues-and-concerns)
-
----
-
-## 🎯 Next Steps
-
-1. Implement DTOs for all authentication endpoints
-2. Create AuthService with all authentication methods
-3. Set up email service and templates
-4. Implement Passport strategies for OAuth2
-5. Add rate limiting middleware
-6. Create authentication guards and decorators
-7. Write integration tests for all flows
-8. Document environment variables
-9. Set up monitoring and alerts
-10. **Implement provider validation** in forgot-password, resend-verification
-11. **Add link-local-account** endpoint for OAuth users
-12. **Set up audit logging** for security events
-13. **Configure rate limiting** with Redis
-
----
-
-**Last Updated:** January 23, 2026
-**Version:** 2.0.0
-
-**Major Changes in v2.0.0:**
-- Added Link Local Account flow for OAuth users
-- Added Account Linking & Management section
-- Added comprehensive Error Handling & Edge Cases
-- Added Rate Limiting Configuration details
-- Added Security Audit Logging section
-- Provider validation for password-related operations
-- Enhanced security best practices
+## 15. Error Reference
+
+| HTTP Status | Error Code | Description |
+|---|---|---|
+| 400 | `VALIDATION_ERROR` | Invalid request body |
+| 400 | `INVALID_PASSWORD_CHANGE` | Incorrect current password |
+| 401 | `INVALID_CREDENTIALS` | Wrong email or password |
+| 401 | `EMAIL_NOT_VERIFIED` | Account in PENDING_VERIFICATION state |
+| 401 | `TOKEN_INVALID` | Malformed, tampered, or not-found token |
+| 401 | `TOKEN_EXPIRED` | Token past expiry time |
+| 401 | `TOKEN_ALREADY_USED` | Verification token already consumed |
+| 403 | `ACCOUNT_SUSPENDED` | Suspended by admin |
+| 403 | `ACCOUNT_DELETED` | Soft-deleted account |
+| 403 | `ACCOUNT_INACTIVE` | Account in INACTIVE state |
+| 403 | `CANNOT_CHANGE_PASSWORD` | OAuth-only account has no password |
+| 403 | `CANNOT_FORGOT_PASSWORD` | OAuth-only account cannot reset password |
+| 409 | `EMAIL_ALREADY_EXISTS` | Duplicate email on registration |
+| 409 | `PROVIDER_ALREADY_LINKED` | OAuth provider already linked |
+| 423 | `ACCOUNT_LOCKED` | Locked after 5 failed login attempts |
+| 429 | `RATE_LIMIT_EXCEEDED` | Too many requests |

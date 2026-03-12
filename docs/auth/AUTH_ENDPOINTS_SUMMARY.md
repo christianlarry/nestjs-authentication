@@ -1,58 +1,80 @@
-# 🚀 Authentication Endpoints - Quick Reference
+# Authentication Endpoints — Quick Reference
 
 ## Overview
-Sistem autentikasi yang lengkap dan aman dengan email verification, password reset, dan OAuth2 integration.
+
+Complete and secure authentication service with email verification, password management, OAuth2 social login, two-factor authentication (TOTP), and account management.
+
+All endpoints are prefixed with `/v1` (URI versioning).  
+API documentation is available at `/docs` (Swagger/OpenAPI 3).
 
 ---
 
-## 📍 All Authentication Endpoints
+## All Authentication Endpoints
 
-### 1. **Registration & Verification**
+### 1. Registration & Email Verification
 
-| Method | Endpoint | Auth Required | Description |
-|--------|----------|---------------|-------------|
-| `POST` | `/v1/auth/register` | ❌ No | Register akun baru + kirim email verifikasi |
-| `POST` | `/v1/auth/verify-email` | ❌ No | Verifikasi email dengan token |
-| `POST` | `/v1/auth/resend-verification` | ❌ No | Kirim ulang email verifikasi |
-| `POST` | `/v1/auth/check-email` | ❌ No | Cek ketersediaan email |
+| Method | Endpoint | Auth | Guard | Description |
+|--------|----------|------|-------|-------------|
+| `POST` | `/v1/auth/register` | No | Rate limit (5/hr) | Register new account; sends verification email |
+| `POST` | `/v1/auth/verify-email` | No | — | Verify email address with token from email |
+| `POST` | `/v1/auth/resend-verification` | No | Rate limit (3/hr) | Resend email verification link |
 
-### 2. **Login & Session**
+### 2. Login & Session
 
-| Method | Endpoint | Auth Required | Description |
-|--------|----------|---------------|-------------|
-| `POST` | `/v1/auth/login` | ❌ No | Login dengan email/password (harus verified) |
-| `POST` | `/v1/auth/refresh` | ❌ No | Refresh access token dengan refresh token |
-| `POST` | `/v1/auth/logout` | ✅ Yes | Logout dan revoke tokens |
+| Method | Endpoint | Auth | Guard | Description |
+|--------|----------|------|-------|-------------|
+| `POST` | `/v1/auth/login` | No | Rate limit (10/15min) | Login with email + password |
+| `POST` | `/v1/auth/refresh` | No (cookie) | Rate limit (20/15min) | Rotate refresh token; issue new access token |
+| `POST` | `/v1/auth/logout` | Yes (JWT) | — | Revoke refresh token + blacklist access token |
 
-### 3. **Password Management**
+### 3. Password Management
 
-| Method | Endpoint | Auth Required | Description |
-|--------|----------|---------------|-------------|
-| `POST` | `/v1/auth/forgot-password` | ❌ No | Request password reset (kirim email) |
-| `POST` | `/v1/auth/reset-password` | ❌ No | Reset password dengan token dari email |
-| `POST` | `/v1/auth/change-password` | ✅ Yes | Ganti password (user sudah login) |
+| Method | Endpoint | Auth | Guard | Description |
+|--------|----------|------|-------|-------------|
+| `POST` | `/v1/auth/forgot-password` | No | Rate limit (3/hr) | Request password reset; sends email with reset token |
+| `POST` | `/v1/auth/reset-password` | No | — | Reset password using token received via email |
+| `POST` | `/v1/auth/change-password` | Yes (JWT) | — | Change password (requires current password); not available for OAuth-only accounts |
 
-### 4. **OAuth2 Social Login**
+### 4. OAuth2 Social Login
 
-| Method | Endpoint | Auth Required | Description |
-|--------|----------|---------------|-------------|
-| `GET` | `/v1/auth/google` | ❌ No | Initiate Google OAuth2 login |
-| `GET` | `/v1/auth/google/callback` | ❌ No | Google OAuth2 callback handler |
-| `GET` | `/v1/auth/facebook` | ❌ No | Initiate Facebook OAuth2 login |
-| `GET` | `/v1/auth/facebook/callback` | ❌ No | Facebook OAuth2 callback handler |
+| Method | Endpoint | Auth | Guard | Description |
+|--------|----------|------|-------|-------------|
+| `GET` | `/v1/auth/google` | No | Rate limit | Initiate Google OAuth2 login; redirects to Google consent |
+| `GET` | `/v1/auth/google/callback` | No | Rate limit (10/min) | Google OAuth2 callback; creates or links account |
+| `GET` | `/v1/auth/github` | No | Rate limit | Initiate GitHub OAuth2 login; redirects to GitHub consent |
+| `GET` | `/v1/auth/github/callback` | No | Rate limit (10/min) | GitHub OAuth2 callback; creates or links account |
+| `GET` | `/v1/auth/facebook` | No | Rate limit | Initiate Facebook OAuth2 login |
+| `GET` | `/v1/auth/facebook/callback` | No | Rate limit (10/min) | Facebook OAuth2 callback |
 
-### 5. **Account Linking**
+### 5. OAuth Provider Linking
 
-| Method | Endpoint | Auth Required | Description |
-|--------|----------|---------------|-------------|
-| `POST` | `/v1/auth/link-local-account` | ❌ No | Initiate Google OAuth2 login |
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/v1/auth/link-local` | Yes (JWT) | Add email/password credentials to an OAuth-only account |
+| `DELETE` | `/v1/auth/providers/:provider` | Yes (JWT) | Unlink an OAuth provider (Google/GitHub/Facebook) |
+
+### 6. Two-Factor Authentication (TOTP)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/v1/auth/2fa/enable` | Yes (JWT) | Generate TOTP secret + QR code URI; returns backup codes |
+| `POST` | `/v1/auth/2fa/confirm` | Yes (JWT) | Confirm setup by verifying first TOTP code |
+| `POST` | `/v1/auth/2fa/disable` | Yes (JWT) | Disable 2FA (requires current TOTP code or backup code) |
+| `POST` | `/v1/auth/2fa/verify` | Yes (partial JWT) | Submit TOTP code to complete login when 2FA is enabled |
+
+### 7. Account Management
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/v1/auth/reactivate` | No | Request account reactivation token (for INACTIVE accounts) |
+| `POST` | `/v1/auth/reactivate/confirm` | No | Confirm reactivation with token from email |
 
 ---
 
-## 🔥 Quick Examples
+## Request / Response Examples
 
-### Register New User
-```bash
+### Register New Account
+```http
 POST /v1/auth/register
 Content-Type: application/json
 
@@ -62,39 +84,31 @@ Content-Type: application/json
   "name": "John Doe"
 }
 ```
-
-**Response:**
 ```json
 {
-  "message": "Registration successful. Please check your email to verify your account.",
-  "userId": "550e8400-e29b-41d4-a716-446655440000",
-  "email": "user@example.com"
+  "message": "Registration successful. Please check your email to verify your account."
 }
 ```
 
 ---
 
 ### Verify Email
-```bash
+```http
 POST /v1/auth/verify-email
 Content-Type: application/json
 
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  "token": "<raw-token-from-email>"
 }
 ```
-
-**Response:**
 ```json
-{
-  "message": "Email verified successfully. You can now login."
-}
+{ "message": "Email verified successfully. You can now log in." }
 ```
 
 ---
 
 ### Login
-```bash
+```http
 POST /v1/auth/login
 Content-Type: application/json
 
@@ -103,35 +117,49 @@ Content-Type: application/json
   "password": "SecurePass123!"
 }
 ```
-
-**Response:**
 ```json
 {
-  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "expiresIn": 900,
-  "user": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "email": "user@example.com",
-    "name": "John Doe",
-    "role": "CUSTOMER"
-  }
+  "accessToken": "<jwt>",
+  "expiresIn": 900
+}
+```
+> Refresh token is set as an `httpOnly` cookie: `Set-Cookie: refresh_token=<jwt>; HttpOnly; Secure; SameSite=Strict`
+
+---
+
+### Refresh Token
+```http
+POST /v1/auth/refresh
+Cookie: refresh_token=<jwt>
+```
+```json
+{
+  "accessToken": "<new-jwt>",
+  "expiresIn": 900
 }
 ```
 
 ---
 
+### Logout
+```http
+POST /v1/auth/logout
+Authorization: Bearer <access_token>
+Cookie: refresh_token=<jwt>
+```
+```json
+{ "message": "Logout successful." }
+```
+
+---
+
 ### Forgot Password
-```bash
+```http
 POST /v1/auth/forgot-password
 Content-Type: application/json
 
-{
-  "email": "user@example.com"
-}
+{ "email": "user@example.com" }
 ```
-
-**Response:**
 ```json
 {
   "message": "If an account with that email exists, a password reset link has been sent."
@@ -141,29 +169,25 @@ Content-Type: application/json
 ---
 
 ### Reset Password
-```bash
+```http
 POST /v1/auth/reset-password
 Content-Type: application/json
 
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token": "<raw-token-from-email>",
   "newPassword": "NewSecurePass123!"
 }
 ```
-
-**Response:**
 ```json
-{
-  "message": "Password reset successful. You can now login with your new password."
-}
+{ "message": "Password reset successful. You can now log in with your new password." }
 ```
 
 ---
 
-### Change Password (Authenticated)
-```bash
+### Change Password
+```http
 POST /v1/auth/change-password
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+Authorization: Bearer <access_token>
 Content-Type: application/json
 
 {
@@ -171,307 +195,102 @@ Content-Type: application/json
   "newPassword": "NewSecurePass123!"
 }
 ```
-
-**Response:**
 ```json
-{
-  "message": "Password changed successfully"
-}
+{ "message": "Password changed successfully." }
 ```
 
 ---
 
-### Refresh Token
-```bash
-POST /v1/auth/refresh
-Content-Type: application/json
+## User Journey Flows
 
-{
-  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-}
+### Journey 1: Email Registration
 ```
-
-**Response:**
-```json
-{
-  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "expiresIn": 900
-}
-```
-
----
-
-### Logout
-```bash
-POST /v1/auth/logout
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-```
-
-**Response:**
-```json
-{
-  "message": "Logout successful"
-}
-```
-
----
-
-## 🎯 User Journey Examples
-
-### Journey 1: Email/Password Registration
-```
-1. POST /auth/register (email, password, name)
-   → User receives email dengan verification link
-
-2. User klik link → POST /auth/verify-email (token)
-   → Email verified
-
-3. POST /auth/login (email, password)
-   → Receive accessToken & refreshToken
-   → Store tokens
-   → Access protected routes
+POST /auth/register  →  email sent
+POST /auth/verify-email (token)  →  email verified
+POST /auth/login  →  access token + refresh cookie
+  [use protected routes]
+POST /auth/refresh  →  new access token (when expired)
+POST /auth/logout  →  revoke tokens
 ```
 
 ### Journey 2: Forgot Password
 ```
-1. POST /auth/forgot-password (email)
-   → User receives email dengan reset link
-
-2. User klik link → POST /auth/reset-password (token, newPassword)
-   → Password berhasil direset
-
-3. POST /auth/login (email, newPassword)
-   → Login dengan password baru
+POST /auth/forgot-password (email)  →  reset email sent
+POST /auth/reset-password (token, newPassword)  →  password reset
+POST /auth/login  →  login with new password
 ```
 
 ### Journey 3: OAuth2 Login (Google)
 ```
-1. Frontend redirect ke: GET /auth/google
-   → User dibawa ke Google consent screen
-
-2. User approve → Google redirect ke: /auth/google/callback?code=xxx
-   → Backend exchange code for tokens
-   → Return accessToken & refreshToken
-
-3. Frontend store tokens → Access protected routes
+GET /auth/google  →  redirect to Google consent
+[user approves]
+GET /auth/google/callback?code=...&state=...  →  tokens issued
+  access token in response body
+  refresh token in httpOnly cookie
 ```
 
-### Journey 4: Token Refresh
+### Journey 4: Enable 2FA
 ```
-1. API call dengan accessToken → 401 Unauthorized (token expired)
-
-2. POST /auth/refresh (refreshToken)
-   → Receive new accessToken
-
-3. Retry original API call dengan new accessToken
-   → Success
+POST /auth/2fa/enable  →  returns QR code URI + backup codes
+  [user scans QR in authenticator app]
+POST /auth/2fa/confirm (totpCode)  →  2FA activated
+  [next login requires POST /auth/2fa/verify after password check]
 ```
 
 ---
 
-## 🔒 Security Features
+## Security Overview
 
-### ✅ Implemented
-
-- **Email Verification**: Required sebelum login
-- **Password Hashing**: Bcrypt dengan salt rounds 12+
-- **JWT Tokens**: Access (15m) + Refresh (7d) tokens
-- **Token Blacklisting**: Untuk logout
-- **Rate Limiting**: Prevent brute force attacks
-- **CSRF Protection**: State parameter di OAuth2
-- **Password Reset**: Secure token-based flow
-- **OAuth2 Integration**: Google & Facebook
-- **Audit Logging**: Track authentication events
-
-### 🎯 Token Expiration
-
-| Token Type | Expiration | Purpose |
-|------------|------------|---------|
-| Access Token | 15 minutes | API access |
-| Refresh Token | 7 days | Renew access token |
-| Email Verification Token | 24 hours | Verify email |
-| Password Reset Token | 1 hour | Reset password |
-
-### 🚫 Rate Limits
-
-| Endpoint | Limit | Window |
-|----------|-------|--------|
-| `/auth/register` | 3 requests | 15 minutes |
-| `/auth/login` | 5 attempts | 15 minutes |
-| `/auth/forgot-password` | 3 requests | 15 minutes |
-| `/auth/resend-verification` | 3 requests | 15 minutes |
+| Feature | Details |
+|---|---|
+| Password hashing | Argon2id (memory-hard) |
+| Access token | JWT HS256, 15 min expiry |
+| Refresh token | JWT HS256, 30 days, httpOnly cookie; stored as SHA-256 hash |
+| Verification tokens | SHA-256 hash only stored; raw token sent via email; 24h expiry |
+| Password reset tokens | SHA-256 hash only stored; 1h expiry |
+| Account lockout | 5 failed attempts → 30 min lockout |
+| 2FA | TOTP (RFC 6238), encrypted secret at rest, hashed backup codes |
+| Rate limiting | Redis-backed per-endpoint throttling |
+| OAuth CSRF | Random `state` param validated via Redis |
 
 ---
 
-## 📋 Validation Rules
+## Token Expiry Reference
 
-### Password Requirements
-- Minimum 8 karakter
-- Maksimum 255 karakter
-- Recommended: Mix uppercase, lowercase, numbers, symbols
-
-### Email Requirements
-- Valid email format
-- Maximum 255 karakter
-- Unique (tidak boleh duplicate)
+| Token | Expiry |
+|---|---|
+| Access token | 15 minutes |
+| Refresh token | 30 days |
+| Email verification token | 24 hours |
+| Password reset token | 1 hour |
+| Account reactivation token | 24 hours |
 
 ---
 
-## ⚠️ Common Error Responses
+## Common Error Responses
 
-### 400 Bad Request
-```json
-{
-  "statusCode": 400,
-  "message": ["password must be longer than or equal to 8 characters"],
-  "error": "Bad Request"
-}
-```
-
-### 401 Unauthorized - Invalid Credentials
-```json
-{
-  "statusCode": 401,
-  "message": "Invalid email or password",
-  "error": "Unauthorized"
-}
-```
-
-### 401 Unauthorized - Email Not Verified
-```json
-{
-  "statusCode": 401,
-  "message": "Please verify your email before logging in",
-  "error": "Unauthorized"
-}
-```
-
-### 409 Conflict - Email Already Exists
-```json
-{
-  "statusCode": 409,
-  "message": "Email already exists",
-  "error": "Conflict"
-}
-```
-
-### 429 Too Many Requests
-```json
-{
-  "statusCode": 429,
-  "message": "Too many requests. Please try again later.",
-  "error": "Too Many Requests"
-}
-```
+| Status | Code | Scenario |
+|---|---|---|
+| 400 | `VALIDATION_ERROR` | Missing/invalid request fields |
+| 401 | `INVALID_CREDENTIALS` | Wrong email or password |
+| 401 | `EMAIL_NOT_VERIFIED` | Account not yet verified |
+| 401 | `TOKEN_EXPIRED` | JWT or verification token expired |
+| 401 | `TOKEN_INVALID` | Malformed or revoked token |
+| 403 | `ACCOUNT_SUSPENDED` | Account suspended by admin |
+| 403 | `ACCOUNT_DELETED` | Account has been deleted |
+| 409 | `EMAIL_ALREADY_EXISTS` | Registration with duplicate email |
+| 423 | `ACCOUNT_LOCKED` | Locked after 5 failed login attempts |
+| 429 | `RATE_LIMIT_EXCEEDED` | Too many requests |
 
 ---
 
-## 🛠️ Implementation Guide
+## Related Documentation
 
-### 1. Environment Variables
-```env
-# JWT
-JWT_SECRET=your-super-secret-key-min-256-bits
-JWT_ACCESS_EXPIRATION=15m
-JWT_REFRESH_EXPIRATION=7d
-
-# Email
-EMAIL_SERVICE=sendgrid
-EMAIL_API_KEY=your-sendgrid-api-key
-EMAIL_FROM=noreply@keramik-store.com
-EMAIL_VERIFICATION_URL=https://keramik-store.com/verify-email
-PASSWORD_RESET_URL=https://keramik-store.com/reset-password
-
-# OAuth2 Google
-GOOGLE_CLIENT_ID=your-google-client-id
-GOOGLE_CLIENT_SECRET=your-google-client-secret
-GOOGLE_CALLBACK_URL=http://localhost:3000/api/v1/auth/google/callback
-
-# OAuth2 Facebook
-FACEBOOK_APP_ID=your-facebook-app-id
-FACEBOOK_APP_SECRET=your-facebook-app-secret
-FACEBOOK_CALLBACK_URL=http://localhost:3000/api/v1/auth/facebook/callback
-
-# Rate Limiting
-RATE_LIMIT_TTL=900
-RATE_LIMIT_MAX=3
-```
-
-### 2. Required Database Tables
-
-**Users Table**
-```sql
-- id (UUID, PK)
-- email (VARCHAR, UNIQUE)
-- password (VARCHAR, nullable for OAuth users)
-- name (VARCHAR)
-- role (ENUM: ADMIN, STAFF, CUSTOMER)
-- provider (ENUM: local, google, facebook)
-- providerId (VARCHAR, nullable)
-- emailVerified (BOOLEAN, default: false)
-- emailVerifiedAt (TIMESTAMP, nullable)
-- passwordChangedAt (TIMESTAMP, nullable)
-- createdAt (TIMESTAMP)
-- updatedAt (TIMESTAMP)
-```
-
-**RefreshTokens Table**
-```sql
-- id (UUID, PK)
-- userId (UUID, FK → Users)
-- token (TEXT)
-- jti (VARCHAR, UNIQUE)
-- expiresAt (TIMESTAMP)
-- revoked (BOOLEAN, default: false)
-- createdAt (TIMESTAMP)
-```
-
-**PasswordResetTokens Table**
-```sql
-- id (UUID, PK)
-- userId (UUID, FK → Users)
-- token (VARCHAR, hashed)
-- expiresAt (TIMESTAMP)
-- used (BOOLEAN, default: false)
-- createdAt (TIMESTAMP)
-```
-
-### 3. Required NestJS Modules
-
-```typescript
-// auth.module.ts
-@Module({
-  imports: [
-    JwtModule.register({
-      secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: '15m' },
-    }),
-    PassportModule,
-    UsersModule,
-    EmailModule,
-  ],
-  controllers: [AuthController],
-  providers: [
-    AuthService,
-    JwtStrategy,
-    GoogleStrategy,
-    FacebookStrategy,
-    RefreshTokenStrategy,
-  ],
-  exports: [AuthService],
-})
-export class AuthModule {}
-```
+- [AUTHENTICATION_FLOW.md](./AUTHENTICATION_FLOW.md) — Detailed sequence flows and edge cases
+- [OAUTH2_SETUP.md](./OAUTH2_SETUP.md) — OAuth2 provider configuration guide
+- [../SYSTEM_DESIGN.md](../SYSTEM_DESIGN.md) — Full system design and architecture
+- [../USE_CASES.md](../USE_CASES.md) — Detailed use case specifications
 
 ---
 
-## 📚 Related Documentation
-
-- [AUTHENTICATION_FLOW.md](./AUTHENTICATION_FLOW.md) - Detailed flow diagrams dan implementation steps
-- [OAUTH2_SETUP.md](./OAUTH2_SETUP.md) - Google & Facebook OAuth2 setup guide
-- [openapi.yaml](./openapi.yaml) - Complete API specification
-
----
-
-**Last Updated:** December 31, 2025
 **API Version:** 1.0.0

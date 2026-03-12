@@ -20,6 +20,7 @@ import authGoogleConfig from './modules/auth-google/infrastructure/config/auth-g
 import rateLimitConfig from './core/config/rate-limit/rate-limit.config';
 import prismaConfig from './core/infrastructure/persistence/prisma/config/prisma.config';
 import { PrismaModule } from './core/infrastructure/persistence/prisma/prisma.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
   imports: [
@@ -75,6 +76,7 @@ import { PrismaModule } from './core/infrastructure/persistence/prisma/prisma.mo
     JwtModule.register({
       global: true,
     }),
+    EventEmitterModule.forRoot({ global: true }),
     PrismaModule,
 
     // Feature Module

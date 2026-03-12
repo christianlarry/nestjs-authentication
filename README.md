@@ -1,355 +1,314 @@
-# NestJS Authentication
+# NestJS Authentication Service
 
-Backend autentikasi modular berbasis NestJS untuk kebutuhan login modern: registrasi email/password, verifikasi email, reset password, refresh token, social login OAuth2, rate limiting, mail queue, dan token/state management dengan Redis.
+A production-oriented authentication service built with NestJS 11, following **Clean Architecture** and **Domain-Driven Design (DDD)** principles. Provides email/password registration, email verification, social login (OAuth2), JWT access + refresh tokens, two-factor authentication (TOTP), account lockout, rate limiting, and asynchronous email delivery via a mail queue.
 
-README ini disusun berdasarkan rencana implementasi di folder `docs` dan kondisi repository saat ini. Karena codebase masih pada tahap scaffold awal, beberapa bagian di bawah adalah **target arsitektur** yang akan dibangun, bukan seluruhnya sudah aktif di source code saat ini.
+---
 
-## Ringkasan
+## Features
 
-Project ini dirancang sebagai layanan autentikasi yang aman dan terpisah, dengan fokus pada:
+- Email/password registration with email verification
+- Login with account lockout (5 failed attempts → 30 min lockout)
+- JWT access tokens (15 min) + refresh tokens (30 days) with rotation
+- Refresh token stored as SHA-256 hash — raw token delivered via httpOnly cookie
+- Logout with token revocation and Redis blacklist
+- Forgot password / reset password via one-time secure token (1 hour)
+- Change password (authenticated)
+- OAuth2 social login: **Google**, **GitHub**, **Facebook**
+- Link and unlink OAuth providers to an existing account
+- Two-factor authentication (TOTP, RFC 6238) with encrypted secret and hashed backup codes
+- Account lifecycle management: activate, deactivate, suspend, soft-delete, reactivate
+- Asynchronous email delivery via BullMQ (verification, reset, new-login notification, lockout notification)
+- Rate limiting per endpoint using Redis-backed `@nestjs/throttler`
+- Swagger/OpenAPI 3 documentation at `/docs`
+- Full audit log of every login attempt (`LoginHistory`)
 
-- NestJS sebagai application framework utama
-- Fastify sebagai HTTP adapter target deployment
-- Argon2 untuk password hashing
-- PostgreSQL native driver tanpa ORM
-- Redis untuk rate limit, blacklist token, dan penyimpanan state/token sementara
-- Mailer service + queue untuk email verifikasi, reset password, dan notifikasi keamanan
-- JWT access token dan refresh token
-- OAuth2 untuk Google
+---
 
-## Fitur Utama
+## Technology Stack
 
-- Registrasi akun dengan email/password
-- Verifikasi email sebelum login lokal diizinkan
-- Login lokal dengan access token dan refresh token
-- Refresh access token menggunakan refresh token
-- Logout dengan mekanisme revoke atau blacklist token
-- Forgot password dan reset password berbasis token sementara
-- Resend verification email
-- OAuth2 login via Google dan Facebook
-- Link akun lokal dengan akun social login
-- Rate limiting untuk endpoint sensitif seperti login, register, dan forgot password
-- Mail queue untuk pengiriman email asynchronous
-- Struktur modular agar mudah dikembangkan menjadi auth service production-ready
+| Category | Technology |
+|---|---|
+| Framework | NestJS 11 |
+| HTTP Adapter | **Fastify** (active — `@nestjs/platform-fastify`) |
+| Language | TypeScript (ES2023, `nodenext` module resolution) |
+| ORM | **Prisma** (client generated at `src/core/infrastructure/persistence/prisma/generated/client`) |
+| Database | PostgreSQL |
+| Cache / State | Redis (ioredis) — rate limiting, token blacklist, OAuth state |
+| Job Queue | BullMQ (Redis-backed) |
+| Authentication | Passport.js + `@nestjs/jwt` |
+| Password hashing | **Argon2id** (memory-hard) |
+| 2FA | TOTP (RFC 6238) |
+| Validation | `class-validator` + `class-transformer` |
+| API Docs | Swagger / OpenAPI 3 (`/docs`) |
+| Mail | Nodemailer via `@nestjs-modules/mailer` (Handlebars templates) |
 
-## Stack Teknologi
+### Fastify Plugins Registered
+- `@fastify/helmet` — secure HTTP headers
+- `@fastify/compress` — Brotli/gzip compression
+- `@fastify/cookie` — cookie parsing for refresh token delivery
 
-### Core
+---
 
-- NestJS 11
-- TypeScript
-- JWT
-- Passport untuk strategi autentikasi
-- BullMQ untuk background job email
+## Architecture
 
-### Target Infrastruktur
+The project follows **Clean Architecture** layered on **DDD** tactical patterns:
 
-- Fastify untuk HTTP server NestJS
-- PostgreSQL dengan native driver `pg` atau query layer manual tanpa ORM
-- Redis untuk cache dan auth state transient
-- SMTP mailer service untuk transactional email
-- Argon2 untuk password hashing
+```
+Presentation   →  Controllers, DTOs, Guards
+Application    →  Use Cases (orchestration only)
+Domain         →  Aggregates, Entities, Value Objects, Domain Events, Repository Interfaces
+Infrastructure →  Prisma Repositories, Passport Strategies, Mail Queue, Redis, Config
+```
 
-### Tooling
+**Bounded Contexts:**
+- **Account BC** (`src/modules/account/`) — credentials, security state, lockout, 2FA, OAuth providers
+- **User BC** (`src/modules/user/`) — profile data, addresses (1:1 with Account)
 
-- ESLint
-- Prettier
-- Jest
-- class-validator
-- class-transformer
+See [docs/SYSTEM_DESIGN.md](docs/SYSTEM_DESIGN.md) for full architecture details.
 
-## Arsitektur yang Direncanakan
+---
 
-Sistem ini mengikuti pendekatan modular dan separation of concerns.
+## Project Structure
 
-### Lapisan utama
+```
+src/
+├── main.ts                          # Bootstrap: Fastify, Swagger, ValidationPipe, CORS
+├── app.module.ts                    # Root module
+│
+├── core/                            # Shared abstractions
+│   ├── config/                      # Typed, validated config modules
+│   ├── domain/                      # Base classes: AggregateRoot, DomainEvent, etc.
+│   └── infrastructure/
+│       ├── persistence/
+│       │   ├── prisma/              # PrismaService, UnitOfWork, generated client
+│       │   └── redis/               # RedisModule (ioredis)
+│       └── services/
+│           └── mail/                # BullMQ mail processor + templates
+│
+└── modules/
+    ├── account/                     # Account Bounded Context (domain complete)
+    │   └── domain/
+    │       ├── entity/              # Account aggregate root
+    │       ├── enums/               # AccountStatus, Role, AuthProvider
+    │       ├── errors/              # 20 typed domain errors
+    │       ├── events/              # 15 domain events
+    │       ├── repositories/        # IAccountRepository, IAccountQueryRepository
+    │       └── value-objects/       # Email, Password, Name, AccountId, AuthProviderVO
+    │
+    ├── user/                        # User Bounded Context (domain complete)
+    │   └── domain/
+    │       ├── entity/              # User aggregate + Address child entity
+    │       ├── enums/               # Gender
+    │       ├── errors/              # 6 typed domain errors
+    │       ├── events/              # 7 domain events
+    │       ├── repositories/        # IUserRepository, IUserQueryRepository
+    │       └── value-objects/       # UserId, AddressId, Name, PhoneNumber, AvatarUrl
+    │
+    ├── auth/                        # Auth module (use cases pending)
+    │   └── application/use-cases/
+    │   └── infrastructure/          # JWT config, strategies, token validation
+    │   └── presentation/http/       # Controllers, DTOs
+    │
+    └── auth-google/                 # Google OAuth2 module
+```
 
-- `core/config`: konfigurasi aplikasi dan validasi environment variables
-- `core/infrastructure/mailer`: integrasi mail transport
-- `core/infrastructure/services/mail`: mail queue, processor, dan template email
-- `core/infrastructure/persistence/postgre`: layer akses PostgreSQL native
-- `core/infrastructure/persistence/redis`: koneksi dan utilitas Redis
-- `modules/auth/application`: use case bisnis autentikasi
-- `modules/auth/infrastructure`: auth config, strategi OAuth, JWT, persistence adapter
-- `modules/auth/presentation/http`: controller, DTO, dan contract HTTP
+---
 
-### Peran tiap storage
+## Data Model Summary
 
-- PostgreSQL: data utama user, refresh token metadata, audit trail, relasi akun social, dan data otoritatif lainnya
-- Redis: rate limiting counter, blacklist token, verification token state, forgot password token state, dan cache auth sementara
+```
+Account ─────┬── AuthProvider  (linked OAuth providers)
+             ├── RefreshToken   (hashed; per-session metadata)
+             ├── VerificationToken (email verify, reset, reactivation)
+             ├── LoginHistory   (immutable audit log)
+             └── User
+                  └── Address[]
+```
+
+See [docs/SYSTEM_DESIGN.md — Data Model](docs/SYSTEM_DESIGN.md#5-data-model) for full table schemas.
+
+---
 
 ## Authentication Flows
 
-### 1. Registrasi akun lokal
+See [docs/auth/AUTHENTICATION_FLOW.md](docs/auth/AUTHENTICATION_FLOW.md) for detailed sequence flows.
 
-Alur umum:
+### Quick Overview
 
-1. User mengirim email, password, dan nama
-2. Password di-hash dengan Argon2
-3. User disimpan ke PostgreSQL dalam status belum terverifikasi
-4. Verification token dibuat dan state token disimpan di Redis
-5. Email verifikasi dikirim melalui mail queue
+| Flow | Entry Point |
+|---|---|
+| Register | `POST /v1/auth/register` |
+| Verify email | `POST /v1/auth/verify-email` |
+| Login (email) | `POST /v1/auth/login` |
+| Login (OAuth) | `GET /v1/auth/google` |
+| Refresh token | `POST /v1/auth/refresh` (cookie) |
+| Logout | `POST /v1/auth/logout` |
+| Forgot password | `POST /v1/auth/forgot-password` |
+| Reset password | `POST /v1/auth/reset-password` |
+| Change password | `POST /v1/auth/change-password` |
+| Enable 2FA | `POST /v1/auth/2fa/enable` |
+| Verify 2FA | `POST /v1/auth/2fa/verify` |
 
-### 2. Verifikasi email
+---
 
-1. User membuka link verifikasi dari email
-2. Backend memvalidasi token dan state token di Redis
-3. Status email user di PostgreSQL diubah menjadi verified
-4. Token verification dihapus atau ditandai tidak valid
+## Token Lifecycle
 
-### 3. Login lokal
+| Token | Expiry | Client Storage | Server Storage |
+|---|---|---|---|
+| Access token | 15 minutes | Memory / Authorization header | Redis blacklist on logout |
+| Refresh token | 30 days | httpOnly cookie | SHA-256(token) in `refresh_tokens` table |
+| Email verification | 24 hours | Email link | SHA-256(token) in `verification_tokens` |
+| Password reset | 1 hour | Email link | SHA-256(token) in `verification_tokens` |
 
-1. User login dengan email dan password
-2. Backend memastikan email telah diverifikasi
-3. Password diverifikasi menggunakan Argon2 verify
-4. Access token dan refresh token diterbitkan
-5. Metadata refresh token dapat disimpan untuk revoke atau rotation
+---
 
-### 4. Refresh token
+## Security Highlights
 
-1. Client mengirim refresh token
-2. Backend memverifikasi signature, expiry, dan status token
-3. Access token baru diterbitkan
-4. Opsi rotation dapat diterapkan untuk refresh token
+| Feature | Detail |
+|---|---|
+| Password hashing | Argon2id |
+| Account lockout | 5 failed attempts → 30 min lock |
+| 2FA | TOTP (RFC 6238); encrypted secret at rest; hashed backup codes |
+| Token hashing | SHA-256; raw token never persisted |
+| Rate limiting | Redis-backed per-endpoint throttling |
+| OAuth CSRF | Random `state` stored in Redis, validated on callback |
+| Secure headers | `@fastify/helmet` |
+| Token revocation | Refresh token: DB flag; Access token: Redis blacklist |
 
-### 5. Logout
+---
 
-1. Access token atau refresh token direvoke
-2. Token yang tidak boleh dipakai lagi dimasukkan ke blacklist Redis
-3. Sesi client berakhir
+## Environment Variables
 
-### 6. Forgot password dan reset password
-
-1. User meminta reset password
-2. Backend menghasilkan reset token berdurasi singkat
-3. State token disimpan di Redis
-4. Email reset password dikirim
-5. User submit token dan password baru
-6. Password baru di-hash dengan Argon2 lalu disimpan ke PostgreSQL
-
-### 7. OAuth2 login
-
-1. Frontend redirect ke endpoint OAuth provider
-2. Provider mengembalikan callback dengan authorization code
-3. Backend tukar code menjadi profile user
-4. User baru dibuat atau akun lama di-link
-5. Backend menerbitkan JWT yang sama seperti login lokal
-
-## Daftar Endpoint Auth
-
-Endpoint berikut dirangkum dari dokumen perencanaan.
-
-| Method | Endpoint | Auth | Deskripsi |
-| --- | --- | --- | --- |
-| POST | `/v1/auth/register` | No | Registrasi akun baru |
-| POST | `/v1/auth/verify-email` | No | Verifikasi email dengan token |
-| POST | `/v1/auth/resend-verification` | No | Kirim ulang email verifikasi |
-| POST | `/v1/auth/check-email` | No | Cek ketersediaan email |
-| POST | `/v1/auth/login` | No | Login email/password |
-| POST | `/v1/auth/refresh` | No | Refresh access token |
-| POST | `/v1/auth/logout` | Yes | Logout dan revoke token |
-| POST | `/v1/auth/forgot-password` | No | Request reset password |
-| POST | `/v1/auth/reset-password` | No | Reset password dengan token |
-| POST | `/v1/auth/change-password` | Yes | Ganti password saat sudah login |
-| GET | `/v1/auth/google` | No | Inisialisasi Google OAuth2 |
-| GET | `/v1/auth/google/callback` | No | Callback Google OAuth2 |
-| GET | `/v1/auth/facebook` | No | Inisialisasi Facebook OAuth2 |
-| GET | `/v1/auth/facebook/callback` | No | Callback Facebook OAuth2 |
-| POST | `/v1/auth/link-local-account` | No | Link akun lokal dan social account |
-
-## Kebijakan Keamanan
-
-### Token lifetime target
-
-| Token | Default |
-| --- | --- |
-| Access token | 15 menit |
-| Refresh token | 30 hari pada config saat ini, target bisa disesuaikan |
-| Verification token | 24 jam |
-| Forgot password token | 1 jam |
-
-### Proteksi yang direncanakan
-
-- Password hashing dengan Argon2
-- Email verification sebelum login lokal
-- Token blacklist di Redis
-- Rate limiting berbasis Redis
-- Penyimpanan state token sementara di Redis
-- Password reset token berdurasi singkat
-- Proteksi brute force pada login dan forgot password
-- Audit logging untuk event autentikasi penting
-
-### Rate limit global saat ini
-
-Berdasarkan config saat ini:
-
-- `RATE_LIMIT`: default `100`
-- `RATE_LIMIT_TTL`: default `60000` ms
-
-Untuk endpoint sensitif, rencana project di dokumen menyarankan limit yang lebih ketat per endpoint, misalnya login, register, dan forgot password.
-
-## Struktur Folder
-
-```text
-src/
-  app.module.ts
-  main.ts
-  core/
-    config/
-    infrastructure/
-      mailer/
-      persistence/
-        postgre/
-        redis/
-      services/
-        mail/
-  modules/
-    auth/
-      application/
-        usecases/
-      infrastructure/
-        config/
-      presentation/
-        http/
-          dtos/
-```
-
-Struktur ini menunjukkan intent yang baik: domain auth dipisahkan dari concern infrastruktur, sehingga lebih mudah untuk testing, scaling, dan maintainability.
-
-## Konfigurasi Environment
-
-Repository saat ini sudah memiliki validasi environment untuk app, auth, Redis, mail, dan OAuth provider. Contoh variabel yang relevan:
-
-```env
-# App
+```dotenv
+# Application
 NODE_ENV=development
-APP_NAME=nestjs-authentication
 APP_PORT=3000
-API_PREFIX=api
-FRONTEND_DOMAIN=http://localhost:3001
-BACKEND_DOMAIN=http://localhost:3000
-DOCS_URL=http://localhost:3000/docs
+APP_NAME="NestJS Authentication"
+APP_FRONTEND_URL=http://localhost:3001
+APP_CORS_ORIGIN=http://localhost:3001
+APP_COOKIE_SECRET=<32-byte-random>
 
-# JWT / Auth
-ACCESS_TOKEN_SECRET=change-me
-REFRESH_TOKEN_SECRET=change-me
-VERIFICATION_TOKEN_SECRET=change-me
-FORGOT_PASSWORD_TOKEN_SECRET=change-me
-ACCESS_TOKEN_EXPIRATION_MINUTES=15
-REFRESH_TOKEN_EXPIRATION_DAYS=30
-VERIFICATION_TOKEN_EXPIRATION_HOURS=24
-FORGOT_PASSWORD_TOKEN_EXPIRATION_HOURS=1
+# Database (Prisma)
+DATABASE_URL=postgresql://user:pass@localhost:5432/auth_db
 
 # Redis
 REDIS_HOST=localhost
 REDIS_PORT=6379
 REDIS_PASSWORD=
-REDIS_DB=0
 
-# Mail
-MAIL_HOST=localhost
+# JWT - Access Token
+AUTH_ACCESS_TOKEN_SECRET=<strong-random>
+AUTH_ACCESS_TOKEN_EXPIRATION_MINUTES=15
+
+# JWT - Refresh Token
+AUTH_REFRESH_TOKEN_SECRET=<strong-random>
+AUTH_REFRESH_TOKEN_EXPIRATION_DAYS=30
+
+# JWT - Email Verification
+AUTH_VERIFICATION_TOKEN_SECRET=<strong-random>
+AUTH_VERIFICATION_TOKEN_EXPIRATION_HOURS=24
+
+# JWT - Forgot Password
+AUTH_FORGOT_PASSWORD_TOKEN_SECRET=<strong-random>
+AUTH_FORGOT_PASSWORD_TOKEN_EXPIRATION_HOURS=1
+
+# Mail (SMTP)
+MAIL_HOST=smtp.example.com
 MAIL_PORT=587
-MAIL_USER=
-MAIL_PASSWORD=
-MAIL_DEFAULT_EMAIL=noreply@example.com
-MAIL_DEFAULT_NAME=Auth Service
-MAIL_IGNORE_TLS=false
-MAIL_SECURE=false
-MAIL_REQUIRE_TLS=false
+MAIL_USER=noreply@example.com
+MAIL_PASSWORD=<smtp-password>
+MAIL_FROM="NestJS Auth" <noreply@example.com>
 
-# OAuth2 Google
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-GOOGLE_CALLBACK_URL=http://localhost:3000/api/v1/auth/google/callback
+# Google OAuth2
+GOOGLE_CLIENT_ID=<from Google Console>
+GOOGLE_CLIENT_SECRET=<from Google Console>
+GOOGLE_CALLBACK_URL=http://localhost:3000/v1/auth/google/callback
 
-# OAuth2 Facebook
-FACEBOOK_CLIENT_ID=
-FACEBOOK_CLIENT_SECRET=
-FACEBOOK_CALLBACK_URL=http://localhost:3000/api/v1/auth/facebook/callback
-
-# PostgreSQL native driver
-POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-POSTGRES_DB=auth_db
-POSTGRES_SSL=false
+# Rate Limiting
+RATE_LIMIT_TTL=60000
+RATE_LIMIT_LIMIT=100
 ```
 
-Catatan:
+---
 
-- Variabel PostgreSQL di atas adalah rekomendasi dokumentasi README karena layer PostgreSQL native belum terdefinisi di config repository saat ini.
-- Untuk production, semua secret wajib diganti dan tidak boleh memakai fallback default.
+## Getting Started
 
-## Menjalankan Project
+### Prerequisites
 
-### Install dependency
+- Node.js 20+
+- PostgreSQL 15+
+- Redis 7+
+- Docker (optional, for `docker-compose.yaml`)
+
+### Install Dependencies
 
 ```bash
 npm install
 ```
 
-### Menjalankan aplikasi
+### Database Setup
 
 ```bash
-npm run start
+# Generate Prisma client
+npx prisma generate
+
+# Run migrations
+npx prisma migrate dev
+```
+
+### Run the Application
+
+```bash
+# Development
 npm run start:dev
+
+# Production build
+npm run build
 npm run start:prod
 ```
 
-### Quality checks
+### API Documentation
+
+Swagger UI is available at: `http://localhost:3000/docs`
+
+---
+
+## Running Tests
 
 ```bash
-npm run lint
+# Unit tests
 npm run test
+
+# Coverage
 npm run test:cov
+
+# Lint
+npm run lint
 ```
 
-## Rekomendasi Dependency Target
+---
 
-Jika project akan mengikuti arsitektur yang dideskripsikan di dokumen, dependency berikut akan relevan atau perlu dipastikan terpasang:
+## Documentation
 
-```bash
-npm install @nestjs/platform-fastify @fastify/helmet @fastify/cors
-npm install argon2 pg ioredis
-npm install nodemailer
-npm install passport passport-google-oauth20 passport-facebook
-```
+| Document | Description |
+|---|---|
+| [docs/SYSTEM_DESIGN.md](docs/SYSTEM_DESIGN.md) | Full system design, architecture, data model, security |
+| [docs/USE_CASES.md](docs/USE_CASES.md) | All 19 authentication use cases with flows and error specs |
+| [docs/auth/AUTHENTICATION_FLOW.md](docs/auth/AUTHENTICATION_FLOW.md) | Detailed sequence diagrams for every auth flow |
+| [docs/auth/AUTH_ENDPOINTS_SUMMARY.md](docs/auth/AUTH_ENDPOINTS_SUMMARY.md) | Quick-reference endpoint table |
+| [docs/auth/OAUTH2_SETUP.md](docs/auth/OAUTH2_SETUP.md) | OAuth2 provider configuration guide |
 
-## Status Repository Saat Ini
+---
 
-Kondisi source code saat README ini dibuat:
+## Implementation Status
 
-- Struktur module auth, Redis, mail service, dan config sudah mulai disiapkan
-- Validasi environment variables sudah ada untuk beberapa modul inti
-- Mail queue module sudah mulai dibentuk dengan BullMQ
-- Controller auth dan app module masih minimal
-- Adapter Fastify belum diaktifkan di bootstrap
-- PostgreSQL native layer belum terimplementasi
-- Flow autentikasi di dokumen masih lebih lengkap daripada implementasi code saat ini
+| Layer | Status |
+|---|---|
+| Domain — Account BC | Complete |
+| Domain — User BC | Complete |
+| Infrastructure — Prisma repositories | Pending |
+| Infrastructure — Passport strategies (JWT, OAuth) | Pending |
+| Application — Use cases | Pending |
+| Presentation — Controllers + DTOs | Pending |
+| Mail templates | Pending |
 
-Artinya, repository ini sudah memiliki arah arsitektur yang jelas, tetapi implementasi fiturnya masih dalam tahap pengembangan.
-
-## Referensi Dokumen Internal
-
-Folder `docs` berisi perencanaan yang menjadi dasar README ini:
-
-- `docs/AUTH_ENDPOINTS_SUMMARY.md`
-- `docs/AUTHENTICATION_FLOW.md`
-- `docs/OAUTH2_SETUP.md`
-
-Dokumen tersebut menjelaskan alur endpoint, flow verifikasi email, forgot password, OAuth2, serta kebutuhan keamanan yang menjadi acuan implementasi.
-
-## Roadmap Implementasi yang Disarankan
-
-1. Ganti bootstrap ke Fastify adapter dan pasang plugin dasar keamanan
-2. Tambahkan persistence PostgreSQL native untuk users, sessions, refresh tokens, dan audit logs
-3. Implementasikan hashing Argon2 untuk register, login, change password, dan reset password
-4. Tambahkan Redis untuk blacklist token, rate limiting, verification token, dan reset token state
-5. Lengkapi HTTP DTO, validation pipe, guard, strategy, dan auth use case
-6. Lengkapi mail workflow untuk verification, password reset, dan login alert
-7. Tambahkan integration test untuk flow register, verify, login, refresh, logout, dan reset password
-
-## Lisensi
-
-Belum ditentukan.
