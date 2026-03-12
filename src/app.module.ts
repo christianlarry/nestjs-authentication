@@ -18,6 +18,8 @@ import { AuthModule } from './modules/auth/auth.module';
 import { AuthGoogleModule } from './modules/auth-google/auth-google.module';
 import authGoogleConfig from './modules/auth-google/infrastructure/config/auth-google.config';
 import rateLimitConfig from './core/config/rate-limit/rate-limit.config';
+import prismaConfig from './core/infrastructure/persistence/prisma/config/prisma.config';
+import { PrismaModule } from './core/infrastructure/persistence/prisma/prisma.module';
 
 @Module({
   imports: [
@@ -31,6 +33,7 @@ import rateLimitConfig from './core/config/rate-limit/rate-limit.config';
         authGoogleConfig,
         redisConfig,
         rateLimitConfig,
+        prismaConfig
       ]
     }),
     RedisModule,
@@ -72,6 +75,7 @@ import rateLimitConfig from './core/config/rate-limit/rate-limit.config';
     JwtModule.register({
       global: true,
     }),
+    PrismaModule,
 
     // Feature Module
     AuthModule,

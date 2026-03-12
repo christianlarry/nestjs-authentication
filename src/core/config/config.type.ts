@@ -4,6 +4,7 @@ import { RateLimitConfig } from "./rate-limit/rate-limit-config.type";
 import { RedisConfig } from "../infrastructure/persistence/redis/config/redis-config.type";
 import { AuthGoogleConfig } from "src/modules/auth-google/infrastructure/config/auth-google-config.type";
 import { MailConfig } from "../infrastructure/services/mail/config/mail-config.type";
+import { PrismaConfig } from "../infrastructure/persistence/prisma/config/prisma-config.type";
 
 export type AllConfigType = {
   // Global Configuration
@@ -13,4 +14,5 @@ export type AllConfigType = {
   redis: RedisConfig;
   rateLimit: RateLimitConfig;
   mail: MailConfig;
+  prisma: PrismaConfig;
 };
