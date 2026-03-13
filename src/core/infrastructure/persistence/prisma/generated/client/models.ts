@@ -11,7 +11,6 @@
 export type * from './models/Account.js'
 export type * from './models/AuthProvider.js'
 export type * from './models/RefreshToken.js'
-export type * from './models/VerificationToken.js'
 export type * from './models/LoginHistory.js'
 export type * from './models/User.js'
 export type * from './models/Address.js'

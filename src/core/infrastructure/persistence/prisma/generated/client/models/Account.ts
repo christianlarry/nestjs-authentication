@@ -310,7 +310,6 @@ export type AccountWhereInput = {
   deletedAt?: Prisma.DateTimeNullableFilter<"Account"> | Date | string | null
   providers?: Prisma.AuthProviderListRelationFilter
   refreshTokens?: Prisma.RefreshTokenListRelationFilter
-  verificationTokens?: Prisma.VerificationTokenListRelationFilter
   loginHistories?: Prisma.LoginHistoryListRelationFilter
   user?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
 }
@@ -335,7 +334,6 @@ export type AccountOrderByWithRelationInput = {
   deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   providers?: Prisma.AuthProviderOrderByRelationAggregateInput
   refreshTokens?: Prisma.RefreshTokenOrderByRelationAggregateInput
-  verificationTokens?: Prisma.VerificationTokenOrderByRelationAggregateInput
   loginHistories?: Prisma.LoginHistoryOrderByRelationAggregateInput
   user?: Prisma.UserOrderByWithRelationInput
 }
@@ -363,7 +361,6 @@ export type AccountWhereUniqueInput = Prisma.AtLeast<{
   deletedAt?: Prisma.DateTimeNullableFilter<"Account"> | Date | string | null
   providers?: Prisma.AuthProviderListRelationFilter
   refreshTokens?: Prisma.RefreshTokenListRelationFilter
-  verificationTokens?: Prisma.VerificationTokenListRelationFilter
   loginHistories?: Prisma.LoginHistoryListRelationFilter
   user?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
 }, "id" | "email">
@@ -436,7 +433,6 @@ export type AccountCreateInput = {
   deletedAt?: Date | string | null
   providers?: Prisma.AuthProviderCreateNestedManyWithoutAccountInput
   refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutAccountInput
-  verificationTokens?: Prisma.VerificationTokenCreateNestedManyWithoutAccountInput
   loginHistories?: Prisma.LoginHistoryCreateNestedManyWithoutAccountInput
   user?: Prisma.UserCreateNestedOneWithoutAccountInput
 }
@@ -461,7 +457,6 @@ export type AccountUncheckedCreateInput = {
   deletedAt?: Date | string | null
   providers?: Prisma.AuthProviderUncheckedCreateNestedManyWithoutAccountInput
   refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutAccountInput
-  verificationTokens?: Prisma.VerificationTokenUncheckedCreateNestedManyWithoutAccountInput
   loginHistories?: Prisma.LoginHistoryUncheckedCreateNestedManyWithoutAccountInput
   user?: Prisma.UserUncheckedCreateNestedOneWithoutAccountInput
 }
@@ -486,7 +481,6 @@ export type AccountUpdateInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.AuthProviderUpdateManyWithoutAccountNestedInput
   refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutAccountNestedInput
-  verificationTokens?: Prisma.VerificationTokenUpdateManyWithoutAccountNestedInput
   loginHistories?: Prisma.LoginHistoryUpdateManyWithoutAccountNestedInput
   user?: Prisma.UserUpdateOneWithoutAccountNestedInput
 }
@@ -511,7 +505,6 @@ export type AccountUncheckedUpdateInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.AuthProviderUncheckedUpdateManyWithoutAccountNestedInput
   refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutAccountNestedInput
-  verificationTokens?: Prisma.VerificationTokenUncheckedUpdateManyWithoutAccountNestedInput
   loginHistories?: Prisma.LoginHistoryUncheckedUpdateManyWithoutAccountNestedInput
   user?: Prisma.UserUncheckedUpdateOneWithoutAccountNestedInput
 }
@@ -728,20 +721,6 @@ export type AccountUpdateOneRequiredWithoutRefreshTokensNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.AccountUpdateToOneWithWhereWithoutRefreshTokensInput, Prisma.AccountUpdateWithoutRefreshTokensInput>, Prisma.AccountUncheckedUpdateWithoutRefreshTokensInput>
 }
 
-export type AccountCreateNestedOneWithoutVerificationTokensInput = {
-  create?: Prisma.XOR<Prisma.AccountCreateWithoutVerificationTokensInput, Prisma.AccountUncheckedCreateWithoutVerificationTokensInput>
-  connectOrCreate?: Prisma.AccountCreateOrConnectWithoutVerificationTokensInput
-  connect?: Prisma.AccountWhereUniqueInput
-}
-
-export type AccountUpdateOneRequiredWithoutVerificationTokensNestedInput = {
-  create?: Prisma.XOR<Prisma.AccountCreateWithoutVerificationTokensInput, Prisma.AccountUncheckedCreateWithoutVerificationTokensInput>
-  connectOrCreate?: Prisma.AccountCreateOrConnectWithoutVerificationTokensInput
-  upsert?: Prisma.AccountUpsertWithoutVerificationTokensInput
-  connect?: Prisma.AccountWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.AccountUpdateToOneWithWhereWithoutVerificationTokensInput, Prisma.AccountUpdateWithoutVerificationTokensInput>, Prisma.AccountUncheckedUpdateWithoutVerificationTokensInput>
-}
-
 export type AccountCreateNestedOneWithoutLoginHistoriesInput = {
   create?: Prisma.XOR<Prisma.AccountCreateWithoutLoginHistoriesInput, Prisma.AccountUncheckedCreateWithoutLoginHistoriesInput>
   connectOrCreate?: Prisma.AccountCreateOrConnectWithoutLoginHistoriesInput
@@ -789,7 +768,6 @@ export type AccountCreateWithoutProvidersInput = {
   updatedAt?: Date | string
   deletedAt?: Date | string | null
   refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutAccountInput
-  verificationTokens?: Prisma.VerificationTokenCreateNestedManyWithoutAccountInput
   loginHistories?: Prisma.LoginHistoryCreateNestedManyWithoutAccountInput
   user?: Prisma.UserCreateNestedOneWithoutAccountInput
 }
@@ -813,7 +791,6 @@ export type AccountUncheckedCreateWithoutProvidersInput = {
   updatedAt?: Date | string
   deletedAt?: Date | string | null
   refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutAccountInput
-  verificationTokens?: Prisma.VerificationTokenUncheckedCreateNestedManyWithoutAccountInput
   loginHistories?: Prisma.LoginHistoryUncheckedCreateNestedManyWithoutAccountInput
   user?: Prisma.UserUncheckedCreateNestedOneWithoutAccountInput
 }
@@ -853,7 +830,6 @@ export type AccountUpdateWithoutProvidersInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutAccountNestedInput
-  verificationTokens?: Prisma.VerificationTokenUpdateManyWithoutAccountNestedInput
   loginHistories?: Prisma.LoginHistoryUpdateManyWithoutAccountNestedInput
   user?: Prisma.UserUpdateOneWithoutAccountNestedInput
 }
@@ -877,7 +853,6 @@ export type AccountUncheckedUpdateWithoutProvidersInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutAccountNestedInput
-  verificationTokens?: Prisma.VerificationTokenUncheckedUpdateManyWithoutAccountNestedInput
   loginHistories?: Prisma.LoginHistoryUncheckedUpdateManyWithoutAccountNestedInput
   user?: Prisma.UserUncheckedUpdateOneWithoutAccountNestedInput
 }
@@ -901,7 +876,6 @@ export type AccountCreateWithoutRefreshTokensInput = {
   updatedAt?: Date | string
   deletedAt?: Date | string | null
   providers?: Prisma.AuthProviderCreateNestedManyWithoutAccountInput
-  verificationTokens?: Prisma.VerificationTokenCreateNestedManyWithoutAccountInput
   loginHistories?: Prisma.LoginHistoryCreateNestedManyWithoutAccountInput
   user?: Prisma.UserCreateNestedOneWithoutAccountInput
 }
@@ -925,7 +899,6 @@ export type AccountUncheckedCreateWithoutRefreshTokensInput = {
   updatedAt?: Date | string
   deletedAt?: Date | string | null
   providers?: Prisma.AuthProviderUncheckedCreateNestedManyWithoutAccountInput
-  verificationTokens?: Prisma.VerificationTokenUncheckedCreateNestedManyWithoutAccountInput
   loginHistories?: Prisma.LoginHistoryUncheckedCreateNestedManyWithoutAccountInput
   user?: Prisma.UserUncheckedCreateNestedOneWithoutAccountInput
 }
@@ -965,7 +938,6 @@ export type AccountUpdateWithoutRefreshTokensInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.AuthProviderUpdateManyWithoutAccountNestedInput
-  verificationTokens?: Prisma.VerificationTokenUpdateManyWithoutAccountNestedInput
   loginHistories?: Prisma.LoginHistoryUpdateManyWithoutAccountNestedInput
   user?: Prisma.UserUpdateOneWithoutAccountNestedInput
 }
@@ -989,119 +961,6 @@ export type AccountUncheckedUpdateWithoutRefreshTokensInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.AuthProviderUncheckedUpdateManyWithoutAccountNestedInput
-  verificationTokens?: Prisma.VerificationTokenUncheckedUpdateManyWithoutAccountNestedInput
-  loginHistories?: Prisma.LoginHistoryUncheckedUpdateManyWithoutAccountNestedInput
-  user?: Prisma.UserUncheckedUpdateOneWithoutAccountNestedInput
-}
-
-export type AccountCreateWithoutVerificationTokensInput = {
-  id?: string
-  email: string
-  emailVerified?: boolean
-  emailVerifiedAt?: Date | string | null
-  password?: string | null
-  lastPasswordChangedAt?: Date | string | null
-  role?: $Enums.Role
-  status?: $Enums.AccountStatus
-  loginAttempts?: number
-  lockedUntil?: Date | string | null
-  lastLoginAt?: Date | string | null
-  twoFactorEnabled?: boolean
-  twoFactorSecret?: string | null
-  twoFactorBackupCodes?: Prisma.AccountCreatetwoFactorBackupCodesInput | string[]
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  deletedAt?: Date | string | null
-  providers?: Prisma.AuthProviderCreateNestedManyWithoutAccountInput
-  refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutAccountInput
-  loginHistories?: Prisma.LoginHistoryCreateNestedManyWithoutAccountInput
-  user?: Prisma.UserCreateNestedOneWithoutAccountInput
-}
-
-export type AccountUncheckedCreateWithoutVerificationTokensInput = {
-  id?: string
-  email: string
-  emailVerified?: boolean
-  emailVerifiedAt?: Date | string | null
-  password?: string | null
-  lastPasswordChangedAt?: Date | string | null
-  role?: $Enums.Role
-  status?: $Enums.AccountStatus
-  loginAttempts?: number
-  lockedUntil?: Date | string | null
-  lastLoginAt?: Date | string | null
-  twoFactorEnabled?: boolean
-  twoFactorSecret?: string | null
-  twoFactorBackupCodes?: Prisma.AccountCreatetwoFactorBackupCodesInput | string[]
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  deletedAt?: Date | string | null
-  providers?: Prisma.AuthProviderUncheckedCreateNestedManyWithoutAccountInput
-  refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutAccountInput
-  loginHistories?: Prisma.LoginHistoryUncheckedCreateNestedManyWithoutAccountInput
-  user?: Prisma.UserUncheckedCreateNestedOneWithoutAccountInput
-}
-
-export type AccountCreateOrConnectWithoutVerificationTokensInput = {
-  where: Prisma.AccountWhereUniqueInput
-  create: Prisma.XOR<Prisma.AccountCreateWithoutVerificationTokensInput, Prisma.AccountUncheckedCreateWithoutVerificationTokensInput>
-}
-
-export type AccountUpsertWithoutVerificationTokensInput = {
-  update: Prisma.XOR<Prisma.AccountUpdateWithoutVerificationTokensInput, Prisma.AccountUncheckedUpdateWithoutVerificationTokensInput>
-  create: Prisma.XOR<Prisma.AccountCreateWithoutVerificationTokensInput, Prisma.AccountUncheckedCreateWithoutVerificationTokensInput>
-  where?: Prisma.AccountWhereInput
-}
-
-export type AccountUpdateToOneWithWhereWithoutVerificationTokensInput = {
-  where?: Prisma.AccountWhereInput
-  data: Prisma.XOR<Prisma.AccountUpdateWithoutVerificationTokensInput, Prisma.AccountUncheckedUpdateWithoutVerificationTokensInput>
-}
-
-export type AccountUpdateWithoutVerificationTokensInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
-  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  lastPasswordChangedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  status?: Prisma.EnumAccountStatusFieldUpdateOperationsInput | $Enums.AccountStatus
-  loginAttempts?: Prisma.IntFieldUpdateOperationsInput | number
-  lockedUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  twoFactorSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  twoFactorBackupCodes?: Prisma.AccountUpdatetwoFactorBackupCodesInput | string[]
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  providers?: Prisma.AuthProviderUpdateManyWithoutAccountNestedInput
-  refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutAccountNestedInput
-  loginHistories?: Prisma.LoginHistoryUpdateManyWithoutAccountNestedInput
-  user?: Prisma.UserUpdateOneWithoutAccountNestedInput
-}
-
-export type AccountUncheckedUpdateWithoutVerificationTokensInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
-  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  lastPasswordChangedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  status?: Prisma.EnumAccountStatusFieldUpdateOperationsInput | $Enums.AccountStatus
-  loginAttempts?: Prisma.IntFieldUpdateOperationsInput | number
-  lockedUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  twoFactorSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  twoFactorBackupCodes?: Prisma.AccountUpdatetwoFactorBackupCodesInput | string[]
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  providers?: Prisma.AuthProviderUncheckedUpdateManyWithoutAccountNestedInput
-  refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutAccountNestedInput
   loginHistories?: Prisma.LoginHistoryUncheckedUpdateManyWithoutAccountNestedInput
   user?: Prisma.UserUncheckedUpdateOneWithoutAccountNestedInput
 }
@@ -1126,7 +985,6 @@ export type AccountCreateWithoutLoginHistoriesInput = {
   deletedAt?: Date | string | null
   providers?: Prisma.AuthProviderCreateNestedManyWithoutAccountInput
   refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutAccountInput
-  verificationTokens?: Prisma.VerificationTokenCreateNestedManyWithoutAccountInput
   user?: Prisma.UserCreateNestedOneWithoutAccountInput
 }
 
@@ -1150,7 +1008,6 @@ export type AccountUncheckedCreateWithoutLoginHistoriesInput = {
   deletedAt?: Date | string | null
   providers?: Prisma.AuthProviderUncheckedCreateNestedManyWithoutAccountInput
   refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutAccountInput
-  verificationTokens?: Prisma.VerificationTokenUncheckedCreateNestedManyWithoutAccountInput
   user?: Prisma.UserUncheckedCreateNestedOneWithoutAccountInput
 }
 
@@ -1190,7 +1047,6 @@ export type AccountUpdateWithoutLoginHistoriesInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.AuthProviderUpdateManyWithoutAccountNestedInput
   refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutAccountNestedInput
-  verificationTokens?: Prisma.VerificationTokenUpdateManyWithoutAccountNestedInput
   user?: Prisma.UserUpdateOneWithoutAccountNestedInput
 }
 
@@ -1214,7 +1070,6 @@ export type AccountUncheckedUpdateWithoutLoginHistoriesInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.AuthProviderUncheckedUpdateManyWithoutAccountNestedInput
   refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutAccountNestedInput
-  verificationTokens?: Prisma.VerificationTokenUncheckedUpdateManyWithoutAccountNestedInput
   user?: Prisma.UserUncheckedUpdateOneWithoutAccountNestedInput
 }
 
@@ -1238,7 +1093,6 @@ export type AccountCreateWithoutUserInput = {
   deletedAt?: Date | string | null
   providers?: Prisma.AuthProviderCreateNestedManyWithoutAccountInput
   refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutAccountInput
-  verificationTokens?: Prisma.VerificationTokenCreateNestedManyWithoutAccountInput
   loginHistories?: Prisma.LoginHistoryCreateNestedManyWithoutAccountInput
 }
 
@@ -1262,7 +1116,6 @@ export type AccountUncheckedCreateWithoutUserInput = {
   deletedAt?: Date | string | null
   providers?: Prisma.AuthProviderUncheckedCreateNestedManyWithoutAccountInput
   refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutAccountInput
-  verificationTokens?: Prisma.VerificationTokenUncheckedCreateNestedManyWithoutAccountInput
   loginHistories?: Prisma.LoginHistoryUncheckedCreateNestedManyWithoutAccountInput
 }
 
@@ -1302,7 +1155,6 @@ export type AccountUpdateWithoutUserInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.AuthProviderUpdateManyWithoutAccountNestedInput
   refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutAccountNestedInput
-  verificationTokens?: Prisma.VerificationTokenUpdateManyWithoutAccountNestedInput
   loginHistories?: Prisma.LoginHistoryUpdateManyWithoutAccountNestedInput
 }
 
@@ -1326,7 +1178,6 @@ export type AccountUncheckedUpdateWithoutUserInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.AuthProviderUncheckedUpdateManyWithoutAccountNestedInput
   refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutAccountNestedInput
-  verificationTokens?: Prisma.VerificationTokenUncheckedUpdateManyWithoutAccountNestedInput
   loginHistories?: Prisma.LoginHistoryUncheckedUpdateManyWithoutAccountNestedInput
 }
 
@@ -1338,14 +1189,12 @@ export type AccountUncheckedUpdateWithoutUserInput = {
 export type AccountCountOutputType = {
   providers: number
   refreshTokens: number
-  verificationTokens: number
   loginHistories: number
 }
 
 export type AccountCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   providers?: boolean | AccountCountOutputTypeCountProvidersArgs
   refreshTokens?: boolean | AccountCountOutputTypeCountRefreshTokensArgs
-  verificationTokens?: boolean | AccountCountOutputTypeCountVerificationTokensArgs
   loginHistories?: boolean | AccountCountOutputTypeCountLoginHistoriesArgs
 }
 
@@ -1376,13 +1225,6 @@ export type AccountCountOutputTypeCountRefreshTokensArgs<ExtArgs extends runtime
 /**
  * AccountCountOutputType without action
  */
-export type AccountCountOutputTypeCountVerificationTokensArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.VerificationTokenWhereInput
-}
-
-/**
- * AccountCountOutputType without action
- */
 export type AccountCountOutputTypeCountLoginHistoriesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.LoginHistoryWhereInput
 }
@@ -1408,7 +1250,6 @@ export type AccountSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   deletedAt?: boolean
   providers?: boolean | Prisma.Account$providersArgs<ExtArgs>
   refreshTokens?: boolean | Prisma.Account$refreshTokensArgs<ExtArgs>
-  verificationTokens?: boolean | Prisma.Account$verificationTokensArgs<ExtArgs>
   loginHistories?: boolean | Prisma.Account$loginHistoriesArgs<ExtArgs>
   user?: boolean | Prisma.Account$userArgs<ExtArgs>
   _count?: boolean | Prisma.AccountCountOutputTypeDefaultArgs<ExtArgs>
@@ -1478,7 +1319,6 @@ export type AccountOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
 export type AccountInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   providers?: boolean | Prisma.Account$providersArgs<ExtArgs>
   refreshTokens?: boolean | Prisma.Account$refreshTokensArgs<ExtArgs>
-  verificationTokens?: boolean | Prisma.Account$verificationTokensArgs<ExtArgs>
   loginHistories?: boolean | Prisma.Account$loginHistoriesArgs<ExtArgs>
   user?: boolean | Prisma.Account$userArgs<ExtArgs>
   _count?: boolean | Prisma.AccountCountOutputTypeDefaultArgs<ExtArgs>
@@ -1491,7 +1331,6 @@ export type $AccountPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
   objects: {
     providers: Prisma.$AuthProviderPayload<ExtArgs>[]
     refreshTokens: Prisma.$RefreshTokenPayload<ExtArgs>[]
-    verificationTokens: Prisma.$VerificationTokenPayload<ExtArgs>[]
     loginHistories: Prisma.$LoginHistoryPayload<ExtArgs>[]
     user: Prisma.$UserPayload<ExtArgs> | null
   }
@@ -1924,7 +1763,6 @@ export interface Prisma__AccountClient<T, Null = never, ExtArgs extends runtime.
   readonly [Symbol.toStringTag]: "PrismaPromise"
   providers<T extends Prisma.Account$providersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Account$providersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AuthProviderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   refreshTokens<T extends Prisma.Account$refreshTokensArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Account$refreshTokensArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RefreshTokenPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  verificationTokens<T extends Prisma.Account$verificationTokensArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Account$verificationTokensArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$VerificationTokenPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   loginHistories<T extends Prisma.Account$loginHistoriesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Account$loginHistoriesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$LoginHistoryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   user<T extends Prisma.Account$userArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Account$userArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
@@ -2411,30 +2249,6 @@ export type Account$refreshTokensArgs<ExtArgs extends runtime.Types.Extensions.I
   take?: number
   skip?: number
   distinct?: Prisma.RefreshTokenScalarFieldEnum | Prisma.RefreshTokenScalarFieldEnum[]
-}
-
-/**
- * Account.verificationTokens
- */
-export type Account$verificationTokensArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the VerificationToken
-   */
-  select?: Prisma.VerificationTokenSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the VerificationToken
-   */
-  omit?: Prisma.VerificationTokenOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.VerificationTokenInclude<ExtArgs> | null
-  where?: Prisma.VerificationTokenWhereInput
-  orderBy?: Prisma.VerificationTokenOrderByWithRelationInput | Prisma.VerificationTokenOrderByWithRelationInput[]
-  cursor?: Prisma.VerificationTokenWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.VerificationTokenScalarFieldEnum | Prisma.VerificationTokenScalarFieldEnum[]
 }
 
 /**

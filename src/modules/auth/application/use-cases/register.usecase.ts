@@ -6,6 +6,7 @@ import { ACCOUNT_QUERY_REPOSITORY_TOKEN, type AccountQueryRepository } from "src
 import { Password } from "src/modules/auth/domain/value-objects";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { AccountRegisteredApplicationEvent } from "src/modules/auth/application/events/account-registered.event";
+import { EmailAlreadyExistsError } from "../errors";
 
 interface RegisterCommand {
   name: string;
@@ -16,8 +17,7 @@ interface RegisterCommand {
 }
 
 interface RegisterResult {
-  success: boolean;
-  message: string;
+  newAccountId: string;
 }
 
 export class RegisterUseCase {
@@ -38,7 +38,7 @@ export class RegisterUseCase {
   async execute(command: RegisterCommand): Promise<RegisterResult> {
     // Check Email Uniqueness
     const exists = await this.accountQueryRepository.existsByEmail(command.credentials.email);
-    if (exists) throw new Error('Email already in use');
+    if (exists) throw new EmailAlreadyExistsError(command.credentials.email);
 
     // Validate Raw Password & Hash Password
     Password.validateRaw(command.credentials.password);
@@ -60,12 +60,12 @@ export class RegisterUseCase {
       new AccountRegisteredApplicationEvent({
         accountId: account.id.getValue(),
         email: account.email.getValue(),
+        name: command.name
       })
     )
 
     return {
-      success: true,
-      message: 'Registration successful'
+      newAccountId: account.id.getValue()
     };
   }
 }

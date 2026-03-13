@@ -226,23 +226,6 @@ export type EnumAuthProviderNameWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedEnumAuthProviderNameFilter<$PrismaModel>
 }
 
-export type EnumVerificationTokenTypeFilter<$PrismaModel = never> = {
-  equals?: $Enums.VerificationTokenType | Prisma.EnumVerificationTokenTypeFieldRefInput<$PrismaModel>
-  in?: $Enums.VerificationTokenType[] | Prisma.ListEnumVerificationTokenTypeFieldRefInput<$PrismaModel>
-  notIn?: $Enums.VerificationTokenType[] | Prisma.ListEnumVerificationTokenTypeFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumVerificationTokenTypeFilter<$PrismaModel> | $Enums.VerificationTokenType
-}
-
-export type EnumVerificationTokenTypeWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: $Enums.VerificationTokenType | Prisma.EnumVerificationTokenTypeFieldRefInput<$PrismaModel>
-  in?: $Enums.VerificationTokenType[] | Prisma.ListEnumVerificationTokenTypeFieldRefInput<$PrismaModel>
-  notIn?: $Enums.VerificationTokenType[] | Prisma.ListEnumVerificationTokenTypeFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumVerificationTokenTypeWithAggregatesFilter<$PrismaModel> | $Enums.VerificationTokenType
-  _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedEnumVerificationTokenTypeFilter<$PrismaModel>
-  _max?: Prisma.NestedEnumVerificationTokenTypeFilter<$PrismaModel>
-}
-
 export type EnumGenderNullableFilter<$PrismaModel = never> = {
   equals?: $Enums.Gender | Prisma.EnumGenderFieldRefInput<$PrismaModel> | null
   in?: $Enums.Gender[] | Prisma.ListEnumGenderFieldRefInput<$PrismaModel> | null
@@ -510,23 +493,6 @@ export type NestedEnumAuthProviderNameWithAggregatesFilter<$PrismaModel = never>
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumAuthProviderNameFilter<$PrismaModel>
   _max?: Prisma.NestedEnumAuthProviderNameFilter<$PrismaModel>
-}
-
-export type NestedEnumVerificationTokenTypeFilter<$PrismaModel = never> = {
-  equals?: $Enums.VerificationTokenType | Prisma.EnumVerificationTokenTypeFieldRefInput<$PrismaModel>
-  in?: $Enums.VerificationTokenType[] | Prisma.ListEnumVerificationTokenTypeFieldRefInput<$PrismaModel>
-  notIn?: $Enums.VerificationTokenType[] | Prisma.ListEnumVerificationTokenTypeFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumVerificationTokenTypeFilter<$PrismaModel> | $Enums.VerificationTokenType
-}
-
-export type NestedEnumVerificationTokenTypeWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: $Enums.VerificationTokenType | Prisma.EnumVerificationTokenTypeFieldRefInput<$PrismaModel>
-  in?: $Enums.VerificationTokenType[] | Prisma.ListEnumVerificationTokenTypeFieldRefInput<$PrismaModel>
-  notIn?: $Enums.VerificationTokenType[] | Prisma.ListEnumVerificationTokenTypeFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumVerificationTokenTypeWithAggregatesFilter<$PrismaModel> | $Enums.VerificationTokenType
-  _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedEnumVerificationTokenTypeFilter<$PrismaModel>
-  _max?: Prisma.NestedEnumVerificationTokenTypeFilter<$PrismaModel>
 }
 
 export type NestedEnumGenderNullableFilter<$PrismaModel = never> = {

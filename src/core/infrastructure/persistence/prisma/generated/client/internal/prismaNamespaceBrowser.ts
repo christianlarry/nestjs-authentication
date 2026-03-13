@@ -54,7 +54,6 @@ export const ModelName = {
   Account: 'Account',
   AuthProvider: 'AuthProvider',
   RefreshToken: 'RefreshToken',
-  VerificationToken: 'VerificationToken',
   LoginHistory: 'LoginHistory',
   User: 'User',
   Address: 'Address'
@@ -128,19 +127,6 @@ export const RefreshTokenScalarFieldEnum = {
 } as const
 
 export type RefreshTokenScalarFieldEnum = (typeof RefreshTokenScalarFieldEnum)[keyof typeof RefreshTokenScalarFieldEnum]
-
-
-export const VerificationTokenScalarFieldEnum = {
-  id: 'id',
-  accountId: 'accountId',
-  type: 'type',
-  tokenHash: 'tokenHash',
-  expiresAt: 'expiresAt',
-  usedAt: 'usedAt',
-  createdAt: 'createdAt'
-} as const
-
-export type VerificationTokenScalarFieldEnum = (typeof VerificationTokenScalarFieldEnum)[keyof typeof VerificationTokenScalarFieldEnum]
 
 
 export const LoginHistoryScalarFieldEnum = {

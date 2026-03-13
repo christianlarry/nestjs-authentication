@@ -56,12 +56,6 @@ export type AuthProvider = Prisma.AuthProviderModel
  */
 export type RefreshToken = Prisma.RefreshTokenModel
 /**
- * Model VerificationToken
- * Generic one-time token for email verification, password reset, and account reactivation.
- * Always store the hash; send the raw token to the user via email.
- */
-export type VerificationToken = Prisma.VerificationTokenModel
-/**
  * Model LoginHistory
  * Immutable audit log of every login attempt.
  * Powers new-login notifications and suspicious-activity alerts.

@@ -387,7 +387,6 @@ export const ModelName = {
   Account: 'Account',
   AuthProvider: 'AuthProvider',
   RefreshToken: 'RefreshToken',
-  VerificationToken: 'VerificationToken',
   LoginHistory: 'LoginHistory',
   User: 'User',
   Address: 'Address'
@@ -406,7 +405,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "account" | "authProvider" | "refreshToken" | "verificationToken" | "loginHistory" | "user" | "address"
+    modelProps: "account" | "authProvider" | "refreshToken" | "loginHistory" | "user" | "address"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -629,80 +628,6 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.RefreshTokenCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.RefreshTokenCountAggregateOutputType> | number
-        }
-      }
-    }
-    VerificationToken: {
-      payload: Prisma.$VerificationTokenPayload<ExtArgs>
-      fields: Prisma.VerificationTokenFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.VerificationTokenFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$VerificationTokenPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.VerificationTokenFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$VerificationTokenPayload>
-        }
-        findFirst: {
-          args: Prisma.VerificationTokenFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$VerificationTokenPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.VerificationTokenFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$VerificationTokenPayload>
-        }
-        findMany: {
-          args: Prisma.VerificationTokenFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$VerificationTokenPayload>[]
-        }
-        create: {
-          args: Prisma.VerificationTokenCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$VerificationTokenPayload>
-        }
-        createMany: {
-          args: Prisma.VerificationTokenCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.VerificationTokenCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$VerificationTokenPayload>[]
-        }
-        delete: {
-          args: Prisma.VerificationTokenDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$VerificationTokenPayload>
-        }
-        update: {
-          args: Prisma.VerificationTokenUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$VerificationTokenPayload>
-        }
-        deleteMany: {
-          args: Prisma.VerificationTokenDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.VerificationTokenUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.VerificationTokenUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$VerificationTokenPayload>[]
-        }
-        upsert: {
-          args: Prisma.VerificationTokenUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$VerificationTokenPayload>
-        }
-        aggregate: {
-          args: Prisma.VerificationTokenAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateVerificationToken>
-        }
-        groupBy: {
-          args: Prisma.VerificationTokenGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.VerificationTokenGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.VerificationTokenCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.VerificationTokenCountAggregateOutputType> | number
         }
       }
     }
@@ -1021,19 +946,6 @@ export const RefreshTokenScalarFieldEnum = {
 export type RefreshTokenScalarFieldEnum = (typeof RefreshTokenScalarFieldEnum)[keyof typeof RefreshTokenScalarFieldEnum]
 
 
-export const VerificationTokenScalarFieldEnum = {
-  id: 'id',
-  accountId: 'accountId',
-  type: 'type',
-  tokenHash: 'tokenHash',
-  expiresAt: 'expiresAt',
-  usedAt: 'usedAt',
-  createdAt: 'createdAt'
-} as const
-
-export type VerificationTokenScalarFieldEnum = (typeof VerificationTokenScalarFieldEnum)[keyof typeof VerificationTokenScalarFieldEnum]
-
-
 export const LoginHistoryScalarFieldEnum = {
   id: 'id',
   accountId: 'accountId',
@@ -1207,20 +1119,6 @@ export type ListEnumAuthProviderNameFieldRefInput<$PrismaModel> = FieldRefInputT
 
 
 /**
- * Reference to a field of type 'VerificationTokenType'
- */
-export type EnumVerificationTokenTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'VerificationTokenType'>
-    
-
-
-/**
- * Reference to a field of type 'VerificationTokenType[]'
- */
-export type ListEnumVerificationTokenTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'VerificationTokenType[]'>
-    
-
-
-/**
  * Reference to a field of type 'Gender'
  */
 export type EnumGenderFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Gender'>
@@ -1359,7 +1257,6 @@ export type GlobalOmitConfig = {
   account?: Prisma.AccountOmit
   authProvider?: Prisma.AuthProviderOmit
   refreshToken?: Prisma.RefreshTokenOmit
-  verificationToken?: Prisma.VerificationTokenOmit
   loginHistory?: Prisma.LoginHistoryOmit
   user?: Prisma.UserOmit
   address?: Prisma.AddressOmit

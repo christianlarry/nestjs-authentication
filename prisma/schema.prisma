@@ -81,11 +81,10 @@ model Account {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  providers          AuthProvider[]
-  refreshTokens      RefreshToken[]
-  verificationTokens VerificationToken[]
-  loginHistories     LoginHistory[]
-  user               User?
+  providers      AuthProvider[]
+  refreshTokens  RefreshToken[]
+  loginHistories LoginHistory[]
+  user           User?
 
   @@index([email])
   @@map("accounts")
@@ -143,24 +142,23 @@ model RefreshToken {
 
 /// Generic one-time token for email verification, password reset, and account reactivation.
 /// Always store the hash; send the raw token to the user via email.
-model VerificationToken {
-  id        String                @id @default(uuid())
-  accountId String
-  type      VerificationTokenType
-
-  /// SHA-256 hash of the raw token sent to the user
-  tokenHash String @unique @db.VarChar(255)
-
-  expiresAt DateTime
-  usedAt    DateTime?
-  createdAt DateTime  @default(now())
-
-  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
-
-  @@index([accountId])
-  @@index([accountId, type])
-  @@map("verification_tokens")
-}
+// Remove this model, because we will use Redis to store OTPs with TTL instead of the database. This is just for demonstration purposes.
+/**
+ * model VerificationToken {
+ * id        String                @id @default(uuid())
+ * accountId String
+ * type      VerificationTokenType
+ * /// SHA-256 hash of the raw token sent to the user
+ * tokenHash String @unique @db.VarChar(255)
+ * expiresAt DateTime
+ * usedAt    DateTime?
+ * createdAt DateTime  @default(now())
+ * account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+ * @@index([accountId])
+ * @@index([accountId, type])
+ * @@map("verification_tokens")
+ * }
+ */
 
 /// Immutable audit log of every login attempt.
 /// Powers new-login notifications and suspicious-activity alerts.

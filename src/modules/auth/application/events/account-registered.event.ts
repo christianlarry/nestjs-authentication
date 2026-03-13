@@ -7,6 +7,7 @@ import { ApplicationEvent } from 'src/core/application/application-event.base';
 export interface AccountRegisteredEventPayload {
   readonly accountId: string;
   readonly email: string;
+  readonly name: string;
 }
 
 export class AccountRegisteredApplicationEvent extends ApplicationEvent<AccountRegisteredEventPayload> {
