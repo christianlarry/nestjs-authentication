@@ -127,6 +127,7 @@ export class Account extends AggregateRoot {
       new AccountRegisteredEvent({
         accountId: account._id.getValue(),
         email: params.email,
+        name: params.name
       }),
     );
 

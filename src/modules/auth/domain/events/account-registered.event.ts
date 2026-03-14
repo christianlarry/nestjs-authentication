@@ -3,6 +3,7 @@ import { DomainEvent } from 'src/core/domain/domain-event.base';
 interface AccountRegisteredEventPayload {
   readonly accountId: string;
   readonly email: string;
+  readonly name: string;
 }
 
 export class AccountRegisteredEvent extends DomainEvent<AccountRegisteredEventPayload> {

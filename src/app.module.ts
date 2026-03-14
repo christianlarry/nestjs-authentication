@@ -22,6 +22,7 @@ import prismaConfig from './core/infrastructure/persistence/prisma/config/prisma
 import { PrismaModule } from './core/infrastructure/persistence/prisma/prisma.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { CacheModule } from './core/infrastructure/services/cache/cache.module';
+import { UserModule } from './modules/user/user.module';
 
 @Module({
   imports: [
@@ -84,6 +85,7 @@ import { CacheModule } from './core/infrastructure/services/cache/cache.module';
     // Feature Module
     AuthModule,
     AuthGoogleModule,
+    UserModule
   ],
   providers: [
     {

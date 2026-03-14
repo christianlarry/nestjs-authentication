@@ -13,13 +13,18 @@ import { PasswordResetTokenRepository } from './infrastructure/repositories/pass
 import { BlacklistedAccessTokenRepository } from './infrastructure/repositories/blacklisted-access-token.repository';
 import { RegisterUseCase } from './application/use-cases/register.usecase';
 import { AccessTokenGenerator, RefreshTokenGenerator } from './infrastructure/jwt-generator';
-import { SendVerificationEmailListener } from './infrastructure/listeners/send-verification-email.listener';
 import { RefreshTokenRepository } from './infrastructure/repositories/refresh-token.repository';
+import { VerifyEmailUseCase } from './application/use-cases/verify-email.usecase';
+import { LoginUseCase } from './application/use-cases/login.usecase';
+import { UserModule } from '../user/user.module';
+import { SendVerificationEmailListener } from './infrastructure/listeners/send-verification-email.listener';
+import { SendWelcomeEmailListener } from './infrastructure/listeners/send-welcome-email.listener';
 
 @Module({
   imports: [
     MailModule,
-    TokenGeneratorModule
+    TokenGeneratorModule,
+    UserModule
   ],
   controllers: [
     AuthController,
@@ -47,9 +52,12 @@ import { RefreshTokenRepository } from './infrastructure/repositories/refresh-to
 
     // Application Services
     RegisterUseCase,
+    VerifyEmailUseCase,
+    LoginUseCase,
 
     // Application Listener
     SendVerificationEmailListener,
+    SendWelcomeEmailListener
   ],
 })
 export class AuthModule { }

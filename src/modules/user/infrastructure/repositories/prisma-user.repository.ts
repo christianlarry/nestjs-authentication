@@ -2,8 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from 'src/core/infrastructure/persistence/prisma/prisma.service';
 import {
-  IUserRepository,
   USER_REPOSITORY_TOKEN,
+  UserRepository,
 } from '../../domain/repositories/user-repository.interface';
 import { User } from '../../domain/entity/user.entity';
 import { UserId } from '../../domain/value-objects/user-id.vo';
@@ -12,7 +12,7 @@ import { PrismaUserMapper } from '../mapper/prisma-user.mapper';
 export { USER_REPOSITORY_TOKEN };
 
 @Injectable()
-export class PrismaUserRepository implements IUserRepository {
+export class PrismaUserRepository implements UserRepository {
   constructor(
     private readonly prisma: PrismaService,
     private readonly eventEmitter: EventEmitter2,

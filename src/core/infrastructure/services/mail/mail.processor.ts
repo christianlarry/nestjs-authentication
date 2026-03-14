@@ -119,8 +119,6 @@ export class MailProcessor extends WorkerHost {
       'verification-email.hbs',
     );
 
-    this.logger.debug(`Sending verification email to ${data.to} with template ${templatePath} and context ${JSON.stringify({ name: data.name, verificationUrl, expiresIn: data.expiresIn })}`);
-
     await this.mailerService.sendMail({
       to: data.to,
       subject: `Verify your ${this.getCompanyName()} account`,

@@ -1,19 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/core/infrastructure/persistence/prisma/prisma.service';
 import {
-  IUserQueryRepository,
   UserProfileResult,
   UserListItemResult,
   AddressResult,
   FindAllUsersQuery,
   FindAllUsersResult,
   USER_QUERY_REPOSITORY_TOKEN,
+  UserQueryRepository,
 } from '../../domain/repositories/user-query-repository.interface';
 
 export { USER_QUERY_REPOSITORY_TOKEN };
 
 @Injectable()
-export class PrismaUserQueryRepository implements IUserQueryRepository {
+export class PrismaUserQueryRepository implements UserQueryRepository {
   constructor(private readonly prisma: PrismaService) { }
 
   // ─────────────────────────────────────────────

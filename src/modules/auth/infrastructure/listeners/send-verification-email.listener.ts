@@ -1,9 +1,9 @@
 import { OnEvent } from "@nestjs/event-emitter";
-import { AccountRegisteredApplicationEvent } from "../../application/events/account-registered.event";
 import { MailService } from "src/core/infrastructure/services/mail/mail.service";
 import { Inject, Logger } from "@nestjs/common";
 import { TOKEN_GENERATOR_TOKEN, type TokenGenerator } from "src/core/infrastructure/services/token-generator/interfaces/token-generator.interface";
-import { EmailVerificationTokenRepository } from "../repositories/email-verification-token.repository";
+import { EmailVerificationTokenRepository } from "../../infrastructure/repositories/email-verification-token.repository";
+import { AccountRegisteredApplicationEvent } from "../../application/events/account-registered.event";
 
 export class SendVerificationEmailListener {
 
