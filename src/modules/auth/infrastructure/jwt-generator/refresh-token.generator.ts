@@ -24,7 +24,7 @@ export class RefreshTokenGenerator {
 
   async generate(params: GenerateRefreshTokenParams): Promise<string> {
     const payload: RefreshTokenPayload = {
-      sub: params.userId,
+      sub: params.accountId,
       type: RefreshTokenGenerator.TokenType,
       jti: uuidv4(),
     };

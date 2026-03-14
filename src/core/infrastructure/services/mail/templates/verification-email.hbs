@@ -1,99 +1,126 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Verify Your Email</title>
+  <title>Verifikasi Email Akun Anda</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 24px;
+      background-color: #f2f4f8;
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      color: #1f2937;
       line-height: 1.6;
-      color: #333;
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 20px;
     }
-    .container {
-      background-color: #f9f9f9;
-      border-radius: 5px;
-      padding: 30px;
+    .wrapper {
+      max-width: 620px;
+      margin: 0 auto;
+    }
+    .card {
+      background-color: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.07);
     }
     .header {
-      text-align: center;
-      margin-bottom: 30px;
+      padding: 24px 28px;
+      background: linear-gradient(135deg, #0f766e 0%, #0ea5a5 100%);
+      color: #ffffff;
     }
-    .header h1 {
-      color: #2c3e50;
+    .brand {
       margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
     }
     .content {
-      background-color: white;
-      padding: 20px;
-      border-radius: 5px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      padding: 28px;
+    }
+    .title {
+      margin: 0 0 12px;
+      font-size: 24px;
+      color: #0f172a;
+    }
+    p {
+      margin: 0 0 16px;
+      font-size: 15px;
+    }
+    .cta-wrap {
+      text-align: center;
+      margin: 24px 0;
     }
     .button {
       display: inline-block;
-      padding: 12px 30px;
-      background-color: #3498db;
-      color: white !important;
+      padding: 12px 24px;
+      background-color: #0f766e;
+      color: #ffffff !important;
       text-decoration: none;
-      border-radius: 5px;
-      margin: 20px 0;
-      font-weight: bold;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 14px;
     }
-    .button:hover {
-      background-color: #2980b9;
+    .link-box {
+      margin: 12px 0 20px;
+      padding: 12px;
+      background-color: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: 10px;
+      font-size: 12px;
+      color: #334155;
+      word-break: break-all;
+    }
+    .notice {
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 14px;
+      margin: 0 0 20px;
+    }
+    .notice.warning {
+      background-color: #fff7ed;
+      border: 1px solid #fdba74;
+      color: #9a3412;
     }
     .footer {
-      text-align: center;
-      margin-top: 30px;
+      padding: 0 28px 24px;
       font-size: 12px;
-      color: #7f8c8d;
-    }
-    .warning {
-      background-color: #fff3cd;
-      border-left: 4px solid #ffc107;
-      padding: 10px;
-      margin: 20px 0;
+      color: #64748b;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <h1>🏺 Keramik Store</h1>
-    </div>
-    
-    <div class="content">
-      <h2>Hi, {{ name }}</h2>
-      
-      <p>Thank you for registering with Keramik Store! We're excited to have you on board.</p>
-      
-      <p>To complete your registration and start shopping for beautiful ceramics, please verify your email address by clicking the button below:</p>
-      
-      <div style="text-align: center;">
-        <a href="{{verificationUrl}}" class="button">Verify Email Address</a>
+  <div class="wrapper">
+    <div class="card">
+      <div class="header">
+        <p class="brand">{{companyName}}</p>
       </div>
-      
-      <p>Or copy and paste this link into your browser:</p>
-      <p style="word-break: break-all; background-color: #f5f5f5; padding: 10px; border-radius: 3px; font-size: 12px;">
-        {{verificationUrl}}
-      </p>
-      
-      <div class="warning">
-        <strong>⏰ Important:</strong> This verification link will expire in <strong>{{expiresIn}}</strong>.
+
+      <div class="content">
+        <h1 class="title">Verifikasi Email Anda</h1>
+
+        <p>Halo {{name}},</p>
+        <p>Terima kasih sudah mendaftar di {{companyName}}. Untuk mengaktifkan akun, silakan verifikasi email Anda melalui tombol di bawah ini.</p>
+
+        <div class="cta-wrap">
+          <a href="{{verificationUrl}}" class="button">Verifikasi Email</a>
+        </div>
+
+        <p>Jika tombol tidak berfungsi, salin dan buka tautan berikut:</p>
+        <div class="link-box">{{verificationUrl}}</div>
+
+        <div class="notice warning">
+          Tautan verifikasi ini berlaku selama <strong>{{expiresIn}}</strong>.
+        </div>
+
+        <p>Jika Anda tidak merasa melakukan pendaftaran, abaikan email ini.</p>
+        <p>Salam,<br>Tim {{companyName}}</p>
       </div>
-      
-      <p>If you didn't create an account with Keramik Store, please ignore this email.</p>
-      
-      <p>Best regards,<br>
-      The Keramik Store Team</p>
-    </div>
-    
-    <div class="footer">
-      <p>© {{year}} Keramik Store. All rights reserved.</p>
-      <p>This is an automated email, please do not reply.</p>
+
+      <div class="footer">
+        <p>© {{year}} {{companyName}}. All rights reserved.</p>
+        <p>Email ini dikirim otomatis, mohon tidak membalas.</p>
+      </div>
     </div>
   </div>
 </body>

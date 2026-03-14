@@ -21,10 +21,10 @@ export class EmailVerificationTokenRepository {
     return this.cache.get(`${this.CACHE_KEY_PREFIX}${token}`);
   }
 
-  async save(token: string, userId: string): Promise<void> {
+  async save(token: string, accountId: string): Promise<void> {
     await this.cache.set(
       `${this.CACHE_KEY_PREFIX}${token}`,
-      userId,
+      accountId,
       this.TOKEN_EXPIRATION_SECONDS
     );
   }

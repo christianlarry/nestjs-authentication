@@ -24,7 +24,7 @@ export class AccessTokenGenerator {
 
   async generate(params: GenerateAccessTokenParams): Promise<string> {
     const payload: AccessTokenPayload = {
-      sub: params.userId,
+      sub: params.accountId,
       email: params.email,
       role: params.role,
       type: AccessTokenGenerator.TokenType,

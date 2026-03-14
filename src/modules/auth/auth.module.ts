@@ -11,6 +11,10 @@ import { TokenGeneratorModule } from 'src/core/infrastructure/services/token-gen
 import { EmailVerificationTokenRepository } from './infrastructure/repositories/email-verification-token.repository';
 import { PasswordResetTokenRepository } from './infrastructure/repositories/password-reset-token.repository';
 import { BlacklistedAccessTokenRepository } from './infrastructure/repositories/blacklisted-access-token.repository';
+import { RegisterUseCase } from './application/use-cases/register.usecase';
+import { AccessTokenGenerator, RefreshTokenGenerator } from './infrastructure/jwt-generator';
+import { SendVerificationEmailListener } from './infrastructure/listeners/send-verification-email.listener';
+import { RefreshTokenRepository } from './infrastructure/repositories/refresh-token.repository';
 
 @Module({
   imports: [
@@ -35,7 +39,17 @@ import { BlacklistedAccessTokenRepository } from './infrastructure/repositories/
     },
     EmailVerificationTokenRepository,
     PasswordResetTokenRepository,
-    BlacklistedAccessTokenRepository
+    BlacklistedAccessTokenRepository,
+    RefreshTokenRepository,
+
+    AccessTokenGenerator,
+    RefreshTokenGenerator,
+
+    // Application Services
+    RegisterUseCase,
+
+    // Application Listener
+    SendVerificationEmailListener,
   ],
 })
 export class AuthModule { }

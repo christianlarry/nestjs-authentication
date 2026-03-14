@@ -1,5 +1,5 @@
 export interface GenerateAccessTokenParams {
-  userId: string;
+  accountId: string;
   email: string;
   role: string;
 }

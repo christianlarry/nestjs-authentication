@@ -1,7 +1,7 @@
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { AccountRegisteredApplicationEvent } from '../events/account-registered.event';
-import { PasswordTooWeakError } from '../../domain/errors/password-too-weak.error';
-import { RegisterUseCase } from './register.usecase';
+import { AccountRegisteredApplicationEvent } from '../../events/account-registered.event';
+import { PasswordTooWeakError } from '../../../domain/errors/password-too-weak.error';
+import { RegisterUseCase } from '../register.usecase';
 
 describe('RegisterUseCase', () => {
   const mockPasswordHasher = {

@@ -44,6 +44,10 @@ export class MailProcessor extends WorkerHost {
     super();
   }
 
+  private getCompanyName(): string {
+    return this.configService.get('app.name', { infer: true }) || 'Your Company';
+  }
+
   /**
    * Main process method untuk handle semua email jobs
    */
@@ -115,12 +119,15 @@ export class MailProcessor extends WorkerHost {
       'verification-email.hbs',
     );
 
+    this.logger.debug(`Sending verification email to ${data.to} with template ${templatePath} and context ${JSON.stringify({ name: data.name, verificationUrl, expiresIn: data.expiresIn })}`);
+
     await this.mailerService.sendMail({
       to: data.to,
-      subject: 'Verify your Keramik Store account',
+      subject: `Verify your ${this.getCompanyName()} account`,
       templatePath,
       context: {
         name: data.name,
+        companyName: this.getCompanyName(),
         verificationUrl,
         expiresIn: data.expiresIn || `${this.configService.get('auth.verificationTokenExpirationHours', { infer: true })!} hours`,
         year: new Date().getFullYear(),
@@ -150,10 +157,11 @@ export class MailProcessor extends WorkerHost {
 
     await this.mailerService.sendMail({
       to: data.to,
-      subject: 'Reset your Keramik Store password',
+      subject: `Reset your ${this.getCompanyName()} password`,
       templatePath,
       context: {
         name: data.name,
+        companyName: this.getCompanyName(),
         resetUrl,
         expiresIn: data.expiresIn || `${this.configService.get('auth.forgotPasswordTokenExpirationHours', { infer: true })!} hours`,
         year: new Date().getFullYear(),
@@ -176,10 +184,11 @@ export class MailProcessor extends WorkerHost {
 
     await this.mailerService.sendMail({
       to: data.to,
-      subject: 'Your Keramik Store password has been changed',
+      subject: `Your ${this.getCompanyName()} password has been changed`,
       templatePath,
       context: {
         name: data.name,
+        companyName: this.getCompanyName(),
         changedAt: data.changedAt.toLocaleString(),
         ipAddress: data.ipAddress || 'Unknown',
         userAgent: data.userAgent || 'Unknown',
@@ -201,11 +210,12 @@ export class MailProcessor extends WorkerHost {
 
     await this.mailerService.sendMail({
       to: data.to,
-      subject: 'Welcome to Keramik Store!',
+      subject: `Welcome to ${this.getCompanyName()}!`,
       templatePath,
       context: {
+        companyName: this.getCompanyName(),
         year: new Date().getFullYear(),
-        frontendUrl: this.configService.get('app.frontendDomain', { infer: true }) || 'https://keramikstore.com',
+        frontendUrl: this.configService.get('app.frontendDomain', { infer: true }) || 'https://example.com',
         email: data.to,
         name: data.name,
       },
@@ -227,10 +237,11 @@ export class MailProcessor extends WorkerHost {
 
     await this.mailerService.sendMail({
       to: data.to,
-      subject: 'New login to your Keramik Store account',
+      subject: `New login to your ${this.getCompanyName()} account`,
       templatePath,
       context: {
         name: data.name,
+        companyName: this.getCompanyName(),
         loginAt: data.loginAt.toLocaleString(),
         ipAddress: data.ipAddress,
         location: data.location || 'Unknown',
@@ -261,10 +272,11 @@ export class MailProcessor extends WorkerHost {
 
     await this.mailerService.sendMail({
       to: data.to,
-      subject: '🚨 Suspicious activity detected on your Keramik Store account',
+      subject: `Suspicious activity detected on your ${this.getCompanyName()} account`,
       templatePath,
       context: {
         name: data.name,
+        companyName: this.getCompanyName(),
         activityType: data.activityType,
         detectedAt: data.detectedAt.toLocaleString(),
         ipAddress: data.ipAddress,

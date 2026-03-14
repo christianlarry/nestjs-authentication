@@ -14,6 +14,7 @@ import {
   CannotVerifyEmailError,
   CannotUnverifyEmailError,
   CannotAccessProtectedResourceError,
+  AccountStateConflictError,
 } from '../errors';
 import {
   AccountRegisteredEvent,
@@ -661,14 +662,38 @@ export class Account extends AggregateRoot {
   }
 
   private validate(): void {
-    if (this.props.status === AccountStatus.DELETED && !this.props.deletedAt) {
-      throw new Error('Invariant violation: a DELETED account must have a deletedAt timestamp.');
+    if (this.props.status === AccountStatus.DELETED && !this.props.deletedAt || this.props.deletedAt && this.props.status !== AccountStatus.DELETED) {
+      throw new AccountStateConflictError('Invariant violation: a DELETED account must have a deletedAt timestamp.');
     }
-    if (this.props.emailVerified && !this.props.emailVerifiedAt) {
-      throw new Error('Invariant violation: a verified email must have an emailVerifiedAt timestamp.');
+
+    if (this.props.emailVerified && !this.props.emailVerifiedAt || !this.props.emailVerified && this.props.emailVerifiedAt) {
+      throw new AccountStateConflictError('Invariant violation: a verified email must have an emailVerifiedAt timestamp.');
     }
-    if (this.props.twoFactorEnabled && !this.props.twoFactorSecret) {
-      throw new Error('Invariant violation: two-factor authentication requires a secret.');
+    if (this.props.twoFactorEnabled && !this.props.twoFactorSecret || !this.props.twoFactorEnabled && this.props.twoFactorSecret) {
+      throw new AccountStateConflictError('Invariant violation: two-factor authentication requires a secret.');
+    }
+
+    // Check Invariant
+    if (this.props.loginAttempts < 0) {
+      throw new AccountStateConflictError('Invariant violation: loginAttempts cannot be negative.');
+    }
+    if (this.props.lockedUntil && this.props.lockedUntil < new Date()) {
+      throw new AccountStateConflictError('Invariant violation: lockedUntil cannot be in the past.');
+    }
+    if (this.props.providers.some(p => p.getLinkedAt() > new Date())) {
+      throw new AccountStateConflictError('Invariant violation: provider linkedAt cannot be in the future.');
+    }
+    if (this.props.lastLoginAt && this.props.lastLoginAt > new Date()) {
+      throw new AccountStateConflictError('Invariant violation: lastLoginAt cannot be in the future.');
+    }
+    if (this.props.createdAt > new Date()) {
+      throw new AccountStateConflictError('Invariant violation: createdAt cannot be in the future.');
+    }
+    if (this.props.updatedAt > new Date()) {
+      throw new AccountStateConflictError('Invariant violation: updatedAt cannot be in the future.');
+    }
+    if (this.props.deletedAt && this.props.deletedAt > new Date()) {
+      throw new AccountStateConflictError('Invariant violation: deletedAt cannot be in the future.');
     }
   }
 }

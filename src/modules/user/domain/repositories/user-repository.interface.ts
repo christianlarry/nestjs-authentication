@@ -7,7 +7,7 @@ export const USER_REPOSITORY_TOKEN = Symbol('USER_REPOSITORY');
  * Command repository for the User aggregate.
  * Returns full entities for domain operations (write side of CQRS).
  */
-export interface IUserRepository {
+export interface UserRepository {
   /** Find a user profile by its aggregate ID. Returns null if not found. */
   findById(id: UserId): Promise<User | null>;
 

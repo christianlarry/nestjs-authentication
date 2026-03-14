@@ -1,3 +1,3 @@
 export interface GenerateRefreshTokenParams {
-  userId: string;
+  accountId: string;
 }

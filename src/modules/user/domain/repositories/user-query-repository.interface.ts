@@ -64,7 +64,7 @@ export interface FindAllUsersResult {
  * Query repository for user profiles.
  * Returns plain DTOs — never entities — optimised for read operations (read side of CQRS).
  */
-export interface IUserQueryRepository {
+export interface UserQueryRepository {
   /** Get a full user profile view by the user's own ID. Returns null if not found. */
   findById(id: string): Promise<UserProfileResult | null>;
 

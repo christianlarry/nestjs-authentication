@@ -41,7 +41,7 @@ export class MailService {
         MailJobType.VERIFICATION_EMAIL,
         {
           to: data.to,
-          subject: 'Verify your Keramik Store account',
+          subject: 'Verify your account',
           type: MailJobType.VERIFICATION_EMAIL,
           context: data,
         },
@@ -81,7 +81,7 @@ export class MailService {
         MailJobType.RESET_PASSWORD,
         {
           to: data.to,
-          subject: 'Reset your Keramik Store password',
+          subject: 'Reset your password',
           type: MailJobType.RESET_PASSWORD,
           context: data,
         },
@@ -121,7 +121,7 @@ export class MailService {
         MailJobType.PASSWORD_CHANGED,
         {
           to: data.to,
-          subject: 'Your Keramik Store password has been changed',
+          subject: 'Your password has been changed',
           type: MailJobType.PASSWORD_CHANGED,
           context: data,
         },
@@ -159,7 +159,7 @@ export class MailService {
         MailJobType.WELCOME,
         {
           to: data.to,
-          subject: 'Welcome to Keramik Store!',
+          subject: 'Welcome to our platform!',
           type: MailJobType.WELCOME,
           context: data,
         },
@@ -199,7 +199,7 @@ export class MailService {
         MailJobType.NEW_LOGIN_NOTIFICATION,
         {
           to: data.to,
-          subject: 'New login to your Keramik Store account',
+          subject: 'New login to your account',
           type: MailJobType.NEW_LOGIN_NOTIFICATION,
           context: data,
         },
@@ -239,7 +239,7 @@ export class MailService {
         MailJobType.SUSPICIOUS_ACTIVITY,
         {
           to: data.to,
-          subject: '🚨 Suspicious activity detected on your Keramik Store account',
+          subject: 'Suspicious activity detected on your account',
           type: MailJobType.SUSPICIOUS_ACTIVITY,
           context: data,
         },

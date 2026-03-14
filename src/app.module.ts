@@ -21,6 +21,7 @@ import rateLimitConfig from './core/config/rate-limit/rate-limit.config';
 import prismaConfig from './core/infrastructure/persistence/prisma/config/prisma.config';
 import { PrismaModule } from './core/infrastructure/persistence/prisma/prisma.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { CacheModule } from './core/infrastructure/services/cache/cache.module';
 
 @Module({
   imports: [
@@ -71,6 +72,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
         },
       }),
     }),
+    CacheModule,
     MailerModule,
     MailModule,
     JwtModule.register({

@@ -14,6 +14,10 @@
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",
+    // Resolve Static Assets
+      "paths": {
+        "@assets/*": ["src/assets/*"]
+      },
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": true,
