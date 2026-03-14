@@ -19,6 +19,16 @@ import { LoginUseCase } from './application/use-cases/login.usecase';
 import { UserModule } from '../user/user.module';
 import { SendVerificationEmailListener } from './infrastructure/listeners/send-verification-email.listener';
 import { SendWelcomeEmailListener } from './infrastructure/listeners/send-welcome-email.listener';
+import { ResendVerificationEmailUseCase } from './application/use-cases/resend-verification-email.usecase';
+import { OAuthLoginOrRegisterUseCase } from './application/use-cases/oauth-login-or-register.usecase';
+import { RefreshAccessTokenUseCase } from './application/use-cases/refresh-access-token.usecase';
+import { LogoutUseCase } from './application/use-cases/logout.usecase';
+import { ForgotPasswordUseCase } from './application/use-cases/forgot-password.usecase';
+import { ResetPasswordUseCase } from './application/use-cases/reset-password.usecase';
+import { ChangePasswordUseCase } from './application/use-cases/change-password.usecase';
+import { LinkOAuthProviderUseCase } from './application/use-cases/link-oauth-provider.usecase';
+import { UnlinkOAuthProviderUseCase } from './application/use-cases/unlink-oauth-provider.usecase';
+import { LinkLocalCredentialsUseCase } from './application/use-cases/link-local-credentials.usecase';
 
 @Module({
   imports: [
@@ -54,6 +64,16 @@ import { SendWelcomeEmailListener } from './infrastructure/listeners/send-welcom
     RegisterUseCase,
     VerifyEmailUseCase,
     LoginUseCase,
+    ResendVerificationEmailUseCase,
+    OAuthLoginOrRegisterUseCase,
+    RefreshAccessTokenUseCase,
+    LogoutUseCase,
+    ForgotPasswordUseCase,
+    ResetPasswordUseCase,
+    ChangePasswordUseCase,
+    LinkOAuthProviderUseCase,
+    UnlinkOAuthProviderUseCase,
+    LinkLocalCredentialsUseCase,
 
     // Application Listener
     SendVerificationEmailListener,

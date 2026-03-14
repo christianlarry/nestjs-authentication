@@ -6,6 +6,7 @@ import {
   ACCOUNT_REPOSITORY_TOKEN,
 } from '../../domain/repositories/account-repository.interface';
 import { Account } from '../../domain/entity/account.entity';
+import { AuthProvider } from '../../domain/enums/auth-provider.enum';
 import { AccountId } from '../../domain/value-objects/account-id.vo';
 import { Email } from '../../domain/value-objects/email.vo';
 import { PrismaAccountMapper } from '../mapper/prisma-account.mapper';
@@ -35,6 +36,22 @@ export class PrismaAccountRepository implements AccountRepository {
   async findByEmail(email: Email): Promise<Account | null> {
     const raw = await this.prisma.getClient().account.findUnique({
       where: { email: email.getValue() },
+      include: { providers: true },
+    });
+
+    return raw ? PrismaAccountMapper.toDomain(raw) : null;
+  }
+
+  async findByProvider(provider: AuthProvider, providerId: string): Promise<Account | null> {
+    const raw = await this.prisma.getClient().account.findFirst({
+      where: {
+        providers: {
+          some: {
+            provider: provider as never,
+            providerId,
+          },
+        },
+      },
       include: { providers: true },
     });
 

@@ -1,4 +1,5 @@
 import { Account } from '../entity/account.entity';
+import { AuthProvider } from '../enums/auth-provider.enum';
 import { AccountId } from '../value-objects/account-id.vo';
 import { Email } from '../value-objects/email.vo';
 
@@ -14,6 +15,9 @@ export interface AccountRepository {
 
   /** Find an account by email address. Returns null if not found. */
   findByEmail(email: Email): Promise<Account | null>;
+
+  /** Find an account by linked OAuth provider identity. Returns null if not found. */
+  findByProvider(provider: AuthProvider, providerId: string): Promise<Account | null>;
 
   /** Returns true if an account with the given email already exists. */
   existsByEmail(email: Email): Promise<boolean>;

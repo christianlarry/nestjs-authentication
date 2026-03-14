@@ -1,6 +1,10 @@
 export * from './enum/auth-application-error-code.enum'
 
 export * from './email-already-exists.error'
+export * from './email-already-verified.error'
 export * from './invalid-credentials.error'
 export * from './account-not-found.error'
 export * from './invalid-or-expired-token.error'
+export * from './provider-already-linked.error'
+export * from './provider-not-linked.error'
+export * from './password-already-set.error'

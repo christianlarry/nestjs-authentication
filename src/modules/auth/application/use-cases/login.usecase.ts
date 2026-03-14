@@ -56,7 +56,7 @@ export class LoginUseCase {
     });
 
     // Save Refresh Token to DB
-    await this.refreshTokenRepository.save(refreshToken);
+    await this.refreshTokenRepository.save(refreshToken, account.id.getValue());
 
     // Record Login Successful, Update lastLoginAt
     account.recordSuccessfulLogin();
